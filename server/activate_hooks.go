@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/DSchalla/mailermost-plugin/server/mailermost"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-
-	"github.com/mattermost/mattermost-server/model"
 )
 
 const minimumServerVersion = "5.4.0"
@@ -35,71 +34,20 @@ func (p *Plugin) OnActivate() error {
 
 	configuration := p.getConfiguration()
 
-	teams, err := p.API.GetTeams()
+	var err error
+	p.Server, err = mailermost.NewServer(p.API, configuration.Server, configuration.Security, configuration.Email, configuration.Password, configuration.PollingInterval)
+
 	if err != nil {
-		return errors.Wrap(err, "failed to query teams OnActivate")
+		return err
 	}
 
-	for _, team := range teams {
-		demoChannelId, ok := configuration.demoChannelIds[team.Id]
-		if !ok {
-			p.API.LogWarn("No demo channel id for team", "team", team.Id)
-			continue
-		}
-
-		if _, err := p.API.CreatePost(&model.Post{
-			UserId:    configuration.demoUserId,
-			ChannelId: demoChannelId,
-			Message: fmt.Sprintf(
-				"OnActivate: %s", manifest.Id,
-			),
-			Type: "custom_demo_plugin",
-			Props: map[string]interface{}{
-				"username":     configuration.Username,
-				"channel_name": configuration.ChannelName,
-			},
-		}); err != nil {
-			return errors.Wrap(err, "failed to post OnActivate message")
-		}
-	}
+	go p.Server.StartPolling()
 
 	return nil
 }
 
-// OnDeactivate is invoked when the plugin is deactivated. This is the plugin's last chance to use
-// the API, and the plugin will be terminated shortly after this invocation.
-//
-// This demo implementation logs a message to the demo channel whenever the plugin is deactivated.
+
 func (p *Plugin) OnDeactivate() error {
-	configuration := p.getConfiguration()
-
-	teams, err := p.API.GetTeams()
-	if err != nil {
-		return errors.Wrap(err, "failed to query teams OnDeactivate")
-	}
-
-	for _, team := range teams {
-		demoChannelId, ok := configuration.demoChannelIds[team.Id]
-		if !ok {
-			p.API.LogWarn("No demo channel id for team", "team", team.Id)
-			continue
-		}
-
-		if _, err := p.API.CreatePost(&model.Post{
-			UserId:    configuration.demoUserId,
-			ChannelId: demoChannelId,
-			Message: fmt.Sprintf(
-				"OnDeactivate: %s", manifest.Id,
-			),
-			Type: "custom_demo_plugin",
-			Props: map[string]interface{}{
-				"username":     configuration.Username,
-				"channel_name": configuration.ChannelName,
-			},
-		}); err != nil {
-			return errors.Wrap(err, "failed to post OnDeactivate message")
-		}
-	}
 
 	return nil
 }

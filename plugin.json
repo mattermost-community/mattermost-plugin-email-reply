@@ -16,7 +16,7 @@
     "footer": "",
     "settings": [
       {
-        "key": "imap_Server",
+        "key": "server",
         "display_name": "IMAP Server/Port",
         "type": "text",
         "help_text": "IMAP Server and Port for polling response eMails",
@@ -24,7 +24,7 @@
         "default": ""
       },
       {
-        "key": "imap_security",
+        "key": "security",
         "display_name": "IMAP Security",
         "type": "dropdown",
         "help_text": "Use SSL or TLS to connect to the server?",
@@ -45,7 +45,7 @@
         ]
       },
       {
-        "key": "imap_email",
+        "key": "email",
         "display_name": "IMAP eMail",
         "type": "text",
         "help_text": "IMAP eMail used to login",
@@ -53,7 +53,7 @@
         "default": ""
       },
       {
-        "key": "imap_password",
+        "key": "password",
         "display_name": "IMAP Password",
         "type": "text",
         "help_text": "IMAP password used to login",
