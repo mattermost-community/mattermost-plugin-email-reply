@@ -61,10 +61,6 @@ func (p *Plugin) OnActivate() error {
 		}); err != nil {
 			return errors.Wrap(err, "failed to post OnActivate message")
 		}
-
-		if err := p.registerCommand(team.Id); err != nil {
-			return errors.Wrap(err, "failed to register command")
-		}
 	}
 
 	return nil
@@ -102,10 +98,6 @@ func (p *Plugin) OnDeactivate() error {
 			},
 		}); err != nil {
 			return errors.Wrap(err, "failed to post OnDeactivate message")
-		}
-
-		if err := p.API.UnregisterCommand(team.Id, CommandTrigger); err != nil {
-			return errors.Wrap(err, "failed to unregister command")
 		}
 	}
 
