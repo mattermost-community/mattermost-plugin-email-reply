@@ -26,6 +26,48 @@
   revision = "816b6608b3c8c1e871bc9cf777f390e2532081fe"
 
 [[projects]]
+  digest = "1:47bab1d4fec5d8cef5f4ec71389480c61f5564f83a6908bbf6acc0623840a66d"
+  name = "github.com/emersion/go-imap"
+  packages = [
+    ".",
+    "client",
+    "commands",
+    "responses",
+    "utf7",
+  ]
+  pruneopts = "NUT"
+  revision = "db2527e3b3931fbb4b4e650165816f3570f73875"
+  version = "v1.0.0-beta.1"
+
+[[projects]]
+  digest = "1:324f9a94a8a74c6ba4993ec0927e4e7807293ed05fb86234707634386a830f86"
+  name = "github.com/emersion/go-message"
+  packages = [
+    ".",
+    "charset",
+    "mail",
+  ]
+  pruneopts = "NUT"
+  revision = "f7e2be8074d097a816a1f5bd9d502adc46275d4a"
+  version = "v0.9.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a957ea8aac9dca83f9b2f4a0dc7d84ad373a5e481e7684df0d5c31c5a3b3b99b"
+  name = "github.com/emersion/go-sasl"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "7e096a0a6197b89989e8cc31016daa67c8c62051"
+
+[[projects]]
+  branch = "master"
+  digest = "1:fce1d387231550fc8cf6bb2c57fbfb2e96aa9026f73e54ac6d8e8695767af6e1"
+  name = "github.com/emersion/go-textwrapper"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "d0e65e56babe3f687ff94c1d764ca0e6aa7723ee"
+
+[[projects]]
   digest = "1:1b91ae0dc69a41d4c2ed23ea5cffb721ea63f5037ca4b81e6d6771fbb8f45129"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -48,20 +90,20 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:a1578f7323eca2b88021fdc9a79a99833d40b12c32a5ea4f284e2fad19ea2657"
+  digest = "1:56a1f3949ebb7fa22fa6b4e4ac0fe0f77cc4faee5b57413e6fa9199a8458faf1"
   name = "github.com/google/uuid"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
-  version = "v1.0.0"
+  revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
+  version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:4a0c072e44da763409da72d41492373a034baf2e6d849c76d239b4abdfbb6c49"
   name = "github.com/gorilla/websocket"
   packages = ["."]
   pruneopts = "NUT"
   revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:ce8deaa2f422b7315ee4fa91f29963ed24f33eb1e1f921fe9f27ce7987776c01"
@@ -102,7 +144,7 @@
   name = "github.com/hashicorp/yamux"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "7221087c3d281fda5f794e28c2ea4c6e4d5c4558"
+  revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
 
 [[projects]]
   digest = "1:d244f8666a838fe6ad70ec8fe77f50ebc29fdc3331a2729ba5886bef8435d10d"
@@ -113,7 +155,7 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:dd184d1cd358e58da88047a3d94595f9f089eee7778f8a580b4b64844bc89bdf"
+  digest = "1:3f4e17f315dbf76597fe7c75d67a40cca9ec9bd4ed3f8589ee42457bc6bd685d"
   name = "github.com/mattermost/mattermost-server"
   packages = [
     "einterfaces",
@@ -126,8 +168,8 @@
     "utils/markdown",
   ]
   pruneopts = "NUT"
-  revision = "0c1207215852a8726c3f09dea157d597fec368df"
-  version = "v5.6.0"
+  revision = "eb65ce62243dcf3ad54fc46e7a03036099656c54"
+  version = "v5.6.3"
 
 [[projects]]
   branch = "mattermost"
@@ -135,7 +177,7 @@
   name = "github.com/mattermost/viper"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "362ff1e71044349d56d37d8b75cd317bff8369b9"
+  revision = "f99c30686b8675673ed42548816de2b0ff751c01"
   source = "https://github.com/mattermost/viper"
 
 [[projects]]
@@ -147,12 +189,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:5fe20cfe4ef484c237cec9f947b2a6fa90bad4b8610fd014f0e4211e13d82d5d"
+  digest = "1:a45ae66dea4c899d79fceb116accfa1892105c251f0dcd9a217ddc276b42ec68"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "fa473d140ef3c6adf42d6b391fe76707f1f243c8"
-  version = "v1.0.0"
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
 
 [[projects]]
   digest = "1:07140002dbf37da92090f731b46fa47be4820b82fe5c14a035203b0e813d0ec2"
@@ -192,12 +234,12 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:5cf3f025cbee5951a4ee961de067c8a89fc95a5adabead774f82822efabab121"
+  digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -208,23 +250,23 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:330e9062b308ac597e28485699c02223bd052437a6eed32a173c9227dcb9d95a"
+  digest = "1:10dad358673cf6e0ee07c2515cc5776a2b11f4adedf647f397739de850c1e3d7"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "NUT"
-  revision = "d40851caa0d747393da1ffb28f7f9d8b4eeffebd"
-  version = "v1.1.2"
+  revision = "a5d6946387efe7d64d09dcba68cdd523dc1273a3"
+  version = "v1.2.0"
 
 [[projects]]
-  digest = "1:3fa7947ca83b98ae553590d993886e845a4bff19b7b007e869c6e0dd3b9da9cd"
+  digest = "1:c5e6b121ef3d2043505edaf4c80e5a008cec2513dc8804795eb0479d1555bcf7"
   name = "github.com/spf13/cast"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "8965335b8c7107321228e3e3702cab9832751bac"
-  version = "v1.2.0"
+  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:f29f83301ed096daed24a90f4af591b7560cb14b9cc3e1827abbf04db7269ab5"
@@ -235,12 +277,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e3707aeaccd2adc89eba6c062fec72116fe1fc1ba71097da85b4d8ae1668a675"
+  digest = "1:9d8420bbf131d1618bde6530af37c3799340d3762cc47210c1d9532a4c3a2779"
   name = "github.com/spf13/pflag"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
-  version = "v1.0.2"
+  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
+  version = "v1.0.3"
 
 [[projects]]
   digest = "1:60a46e2410edbf02b419f833372dd1d24d7aa1b916a990a7370e792fada1eadd"
@@ -251,12 +293,11 @@
   version = "v0.1.1"
 
 [[projects]]
-  digest = "1:72cea38d2957d95d18be2287ef9d4b06b89796d2e3070bc7f796bea3a4844381"
+  digest = "1:81d363777b015e85bd42b978b80f4f5ecdaa43e11452ba8ff7ea93db3ce166bd"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "mock",
-    "require",
   ]
   pruneopts = "NUT"
   revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
@@ -302,11 +343,11 @@
     "blowfish",
   ]
   pruneopts = "NUT"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "ff983b9c42bc9fbf91556e191cc8efb585c16908"
 
 [[projects]]
   branch = "master"
-  digest = "1:9f32fc53c1d2f9b170f2bec5beac0a6ce6624d4c275b9a6a50597c3c6448446e"
+  digest = "1:04a4b2b2f3d99fbe68dc0dfd149e75cda6e584c7c33a377369e44506c56a0e9c"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -320,22 +361,29 @@
     "trace",
   ]
   pruneopts = "NUT"
-  revision = "2f5d2388922f370f4355f327fcf4cfe9f5583908"
+  revision = "915654e7eabcea33ae277abbecf52f0d8b7a9fdc"
 
 [[projects]]
   branch = "master"
-  digest = "1:ea75865b4efdf4abbaec947b00bc3fe3d81952e4d58d679d7827c5fa3da8b1da"
+  digest = "1:ca8ea53e5cb30d38277ad63ca4e92fd574ca370b44f0b149c2fc2dd524cbf05f"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NUT"
-  revision = "d47a0f3392421c5624713c9a19fe781f651f8a50"
+  revision = "11f53e03133963fb11ae0588e08b5e0b85be8be5"
 
 [[projects]]
-  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
+  digest = "1:0cae9024593d190d4a8adc7a7b291dd70d7de0cae46032649f6ad0fe330981bc"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
+    "encoding",
+    "encoding/charmap",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
@@ -355,23 +403,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:56b0bca90b7e5d1facf5fbdacba23e4e0ce069d25381b8e2f70ef1e7ebfb9c1a"
+  digest = "1:077c1c599507b3b3e9156d17d36e1e61928ee9b53a5b420f10f28ebd4a0b275c"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "NUT"
-  revision = "c3f76f3b92d1ffa4c58a9ff842a58b8877655e0f"
+  revision = "db91494dd46c1fdcbbde05e5ff5eb56df8f7d79a"
 
 [[projects]]
-  digest = "1:fae299a942ba4907d7b7865fa5e51e892524a217468d10edbfd6ca7b3bb94111"
+  digest = "1:36f9bc120e414614a50cc36610f816aa1ae03a93976e670a0616a8f2ceace71f"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
     "credentials",
+    "credentials/internal",
     "encoding",
     "encoding/proto",
     "grpclog",
@@ -379,9 +429,12 @@
     "health/grpc_health_v1",
     "internal",
     "internal/backoff",
+    "internal/binarylog",
     "internal/channelz",
     "internal/envconfig",
     "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
     "internal/transport",
     "keepalive",
     "metadata",
@@ -395,8 +448,8 @@
     "tap",
   ]
   pruneopts = "NUT"
-  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
-  version = "v1.15.0"
+  revision = "a02b0774206b209466313a0b525d2c738fe407eb"
+  version = "v1.18.0"
 
 [[projects]]
   digest = "1:80c34337e8a734e190f2d1b716cae774cca74db98315166f92074434e9af0227"
@@ -407,25 +460,27 @@
   version = "v2.1"
 
 [[projects]]
-  digest = "1:7c95b35057a0ff2e19f707173cc1a947fa43a6eb5c4d300d196ece0334046082"
+  digest = "1:18108594151654e9e696b27b181b953f9a90b16bf14d253dd1b397b025a1487f"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/blang/semver",
+    "github.com/emersion/go-imap",
+    "github.com/emersion/go-imap/client",
+    "github.com/emersion/go-message/mail",
     "github.com/mattermost/mattermost-server/model",
     "github.com/mattermost/mattermost-server/plugin",
     "github.com/mattermost/mattermost-server/plugin/plugintest",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
-    "github.com/stretchr/testify/require",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
