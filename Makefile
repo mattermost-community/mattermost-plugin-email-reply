@@ -5,9 +5,6 @@ HTTP ?= $(shell command -v http 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)
 MANIFEST_FILE ?= plugin.json
 
-MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-MM_ADMIN_USERNAME=dschalla
-MM_ADMIN_PASSWORD=testtest
 
 # Verify environment, and define PLUGIN_ID, PLUGIN_VERSION, HAS_SERVER and HAS_WEBAPP as needed.
 include build/setup.mk
