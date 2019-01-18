@@ -1,0 +1,73 @@
+{
+  "id": "com.mattermost.mailermost-plugin",
+  "name": "Mailermost Plugin",
+  "description": "This plugin demonstrates the capabilities of a Mattermost plugin.",
+  "version": "0.0.5",
+  "server": {
+    "executables": {
+      "linux-amd64": "server/dist/plugin-linux-amd64",
+      "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+    },
+    "executable": ""
+  },
+  "settings_schema": {
+    "header": "",
+    "footer": "",
+    "settings": [
+      {
+        "key": "imap_Server",
+        "display_name": "IMAP Server/Port",
+        "type": "text",
+        "help_text": "IMAP Server and Port for polling response eMails",
+        "placeholder": "example.com:443",
+        "default": ""
+      },
+      {
+        "key": "imap_security",
+        "display_name": "IMAP Security",
+        "type": "dropdown",
+        "help_text": "Use SSL or TLS to connect to the server?",
+        "default": "ssl",
+        "options": [
+          {
+            "display_name": "None",
+            "value": "none"
+          },
+          {
+            "display_name": "SSL",
+            "value": "ssl"
+          },
+          {
+            "display_name": "TLS",
+            "value": "tls"
+          }
+        ]
+      },
+      {
+        "key": "imap_email",
+        "display_name": "IMAP eMail",
+        "type": "text",
+        "help_text": "IMAP eMail used to login",
+        "placeholder": "reply-to@example.com",
+        "default": ""
+      },
+      {
+        "key": "imap_password",
+        "display_name": "IMAP Password",
+        "type": "text",
+        "help_text": "IMAP password used to login",
+        "placeholder": "hunter2",
+        "default": ""
+      },
+      {
+        "key": "polling_interval",
+        "display_name": "Polling Interval (in seconds)",
+        "type": "text",
+        "help_text": "How often to fetch eMail from the inbox",
+        "placeholder": "60",
+        "default": ""
+      }
+    ]
+  }
+}
