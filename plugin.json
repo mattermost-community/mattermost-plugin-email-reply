@@ -65,7 +65,7 @@
         "display_name": "Polling Interval (in seconds)",
         "type": "text",
         "help_text": "How often to fetch eMail from the inbox",
-        "placeholder": "60",
+        "placeholder": "5",
         "default": ""
       }
     ]

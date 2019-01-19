@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/DSchalla/mailermost-plugin/server/mailermost"
 
 	"github.com/blang/semver"
@@ -45,7 +46,6 @@ func (p *Plugin) OnActivate() error {
 
 	return nil
 }
-
 
 func (p *Plugin) OnDeactivate() error {
 

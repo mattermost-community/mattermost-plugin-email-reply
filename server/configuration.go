@@ -17,7 +17,7 @@ type configuration struct {
 	Security        string
 	Email           string
 	Password        string
-	PollingInterval string
+	PollingInterval string `json:"polling_interval"`
 }
 
 // getConfiguration retrieves the active configuration under lock, making it safe to use
