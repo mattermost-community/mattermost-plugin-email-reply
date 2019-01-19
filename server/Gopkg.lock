@@ -40,32 +40,12 @@
   version = "v1.0.0-beta.1"
 
 [[projects]]
-  digest = "1:324f9a94a8a74c6ba4993ec0927e4e7807293ed05fb86234707634386a830f86"
-  name = "github.com/emersion/go-message"
-  packages = [
-    ".",
-    "charset",
-    "mail",
-  ]
-  pruneopts = "NUT"
-  revision = "f7e2be8074d097a816a1f5bd9d502adc46275d4a"
-  version = "v0.9.1"
-
-[[projects]]
   branch = "master"
   digest = "1:a957ea8aac9dca83f9b2f4a0dc7d84ad373a5e481e7684df0d5c31c5a3b3b99b"
   name = "github.com/emersion/go-sasl"
   packages = ["."]
   pruneopts = "NUT"
   revision = "7e096a0a6197b89989e8cc31016daa67c8c62051"
-
-[[projects]]
-  branch = "master"
-  digest = "1:fce1d387231550fc8cf6bb2c57fbfb2e96aa9026f73e54ac6d8e8695767af6e1"
-  name = "github.com/emersion/go-textwrapper"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "d0e65e56babe3f687ff94c1d764ca0e6aa7723ee"
 
 [[projects]]
   digest = "1:1b91ae0dc69a41d4c2ed23ea5cffb721ea63f5037ca4b81e6d6771fbb8f45129"
@@ -372,18 +352,13 @@
   revision = "11f53e03133963fb11ae0588e08b5e0b85be8be5"
 
 [[projects]]
-  digest = "1:0cae9024593d190d4a8adc7a7b291dd70d7de0cae46032649f6ad0fe330981bc"
+  digest = "1:abee7d95958e649b0319b44f4964e55db9fa4098cef5b27e829143421e9a2376"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
     "encoding",
-    "encoding/charmap",
-    "encoding/internal",
     "encoding/internal/identifier",
-    "encoding/japanese",
-    "encoding/simplifiedchinese",
-    "encoding/traditionalchinese",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
@@ -472,9 +447,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/blang/semver",
-    "github.com/emersion/go-imap",
     "github.com/emersion/go-imap/client",
-    "github.com/emersion/go-message/mail",
     "github.com/mattermost/mattermost-server/model",
     "github.com/mattermost/mattermost-server/plugin",
     "github.com/mattermost/mattermost-server/plugin/plugintest",

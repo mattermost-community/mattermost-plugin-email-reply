@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"io/ioutil"
+	"net/mail"
 
 	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-imap"
 )
 
 type Server struct {
@@ -44,7 +48,74 @@ func (s *Server) StartPolling() {
 	for {
 		select {
 		case <-ticker.C:
-			s.api.LogInfo("poll")
+			s.api.LogInfo("============================")
+			s.api.LogInfo("Start poll")
+
+			c, err := client.DialTLS(s.server, nil)
+			if err != nil {
+				s.api.LogError(err.Error())
+			}
+			s.api.LogDebug("Connected")
+			defer c.Logout()
+
+			if err := c.Login(s.email, s.password); err != nil {
+				s.api.LogError(err.Error())
+			}
+			s.api.LogInfo("Logged in")
+
+			s.api.LogInfo("Selecting mailbox")
+			mbox, err := c.Select("INBOX", false)
+			if err != nil {
+				s.api.LogError(err.Error())
+			}
+			s.api.LogInfo("Mailbox selected")
+
+			from := uint32(1)
+			to := mbox.Messages
+
+			seqset := new(imap.SeqSet)
+			seqset.AddRange(from, to)
+
+			messages := make(chan *imap.Message, 10)
+			done := make(chan error, 1)
+			section := &imap.BodySectionName{}
+			go func() {
+				done <- c.Fetch(seqset, []imap.FetchItem{section.FetchItem(), imap.FetchEnvelope}, messages)
+			}()
+
+			s.api.LogInfo("Last messages:")
+			for msg := range messages {
+				r := msg.GetBody(section)
+				if r == nil {
+					s.api.LogError(fmt.Sprintf("Server didn't returned message body for subject %v", msg.Envelope.Subject))
+					continue
+				}
+
+				m, err := mail.ReadMessage(r)
+				if err != nil {
+					s.api.LogError(err.Error())
+					continue
+				}
+
+				body, err := ioutil.ReadAll(m.Body)
+				if err != nil {
+					s.api.LogError("Couldn't read message's body")
+					continue
+				}
+
+				s.api.LogInfo("------------ START MESSAGE ------------")
+				s.api.LogInfo("- Subject: " + msg.Envelope.Subject)
+				s.api.LogInfo("- InReplyTo: " + msg.Envelope.InReplyTo)
+				s.api.LogInfo(fmt.Sprintf("- Message Body: %+v", string(body)))
+				s.api.LogInfo("------------- END MESSAGE -------------")
+			}
+
+			if err := <-done; err != nil {
+				s.api.LogError(err.Error())
+			}
+
+			s.api.LogInfo("End poll")
+			s.api.LogInfo("============================")
 			// TODO:
 			// 1. Retrieve emails.
 			// 2. Delete non-pertinent ones (don't have the subject, message-id header, and potentially the post hyperlink).
