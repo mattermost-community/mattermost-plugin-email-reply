@@ -2,14 +2,14 @@ package mailermost
 
 import (
 	"fmt"
-	"strconv"
-	"time"
 	"io/ioutil"
 	"net/mail"
+	"strconv"
+	"time"
 
-	"github.com/mattermost/mattermost-server/plugin"
+	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
-	"github.com/emersion/go-imap"
+	"github.com/mattermost/mattermost-server/plugin"
 )
 
 type Server struct {
@@ -129,10 +129,7 @@ func (s *Server) StartPolling() {
 	s.api.LogInfo(fmt.Sprintf("Server: %s, Security: %s, Email: %s, Password: %s", s.server, s.security, s.email, s.password))
 
 	ticker := time.NewTicker(time.Duration(s.pollingInterval) * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			s.checkMailbox()
-		}
+	for range ticker.C {
+		s.checkMailbox()
 	}
 }
