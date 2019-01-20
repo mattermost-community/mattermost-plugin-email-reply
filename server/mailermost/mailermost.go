@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"strings"
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -23,7 +24,6 @@ type Server struct {
 }
 
 func NewServer(api plugin.API, server, security, email, password, pollingInterval string) (*Server, error) {
-
 	s := &Server{
 		api:      api,
 		server:   server,
@@ -44,6 +44,7 @@ func NewServer(api plugin.API, server, security, email, password, pollingInterva
 func (s *Server) checkMailbox() {
 	c, err := client.DialTLS(s.server, nil)
 	if err != nil {
+
 		s.api.LogError(err.Error())
 	}
 
@@ -105,6 +106,11 @@ func (s *Server) checkMailbox() {
 			continue
 		}
 
+		messageText := s.extractMessage(string(body))
+		s.api.LogInfo(fmt.Sprintf("Message text %v", messageText))
+		// GET USER
+		// CHECK PERMISSIONS
+		// POST MESSAGE
 	}
 
 	if err := <-done; err != nil {
@@ -139,4 +145,20 @@ func (s *Server) postIDFromEmailBody(emailBody string) string {
 		postID = match[len(match)-26:]
 	}
 	return postID
+}
+
+func (s *Server) extractMessage(body string) string {
+	bodyWithoutHeaders := body
+	firstIdx := strings.Index(body, "\r\n\r\n")
+	if firstIdx != -1 {
+		bodyWithoutHeaders = body[firstIdx+4:]
+	}
+
+	lastIdx := strings.Index(bodyWithoutHeaders, "\r\n\r\n")
+	cleanBody := bodyWithoutHeaders
+	if lastIdx != -1 {
+		cleanBody = bodyWithoutHeaders[:lastIdx]
+	}
+
+	return cleanBody
 }
