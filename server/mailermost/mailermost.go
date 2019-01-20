@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/mail"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -41,27 +42,20 @@ func NewServer(api plugin.API, server, security, email, password, pollingInterva
 }
 
 func (s *Server) checkMailbox() {
-	s.api.LogInfo("============================")
-	s.api.LogInfo("Start poll")
-
 	c, err := client.DialTLS(s.server, nil)
 	if err != nil {
 		s.api.LogError(err.Error())
 	}
-	s.api.LogDebug("Connected")
 
 	if err := c.Login(s.email, s.password); err != nil {
 		s.api.LogError(err.Error())
 	}
-	s.api.LogInfo("Logged in")
 	defer c.Logout()
 
-	s.api.LogInfo("Selecting mailbox")
 	mbox, err := c.Select("INBOX", false)
 	if err != nil {
 		s.api.LogError(err.Error())
 	}
-	s.api.LogInfo("Mailbox selected")
 
 	from := uint32(1)
 	to := mbox.Messages
@@ -76,7 +70,6 @@ func (s *Server) checkMailbox() {
 		done <- c.Fetch(seqset, []imap.FetchItem{section.FetchItem(), imap.FetchEnvelope}, messages)
 	}()
 
-	s.api.LogInfo("Last messages:")
 	for msg := range messages {
 		r := msg.GetBody(section)
 		if r == nil {
@@ -96,23 +89,28 @@ func (s *Server) checkMailbox() {
 			continue
 		}
 
-		fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
+		// fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
+		deleteMessage := func() {
+			item := imap.FormatFlagsOp(imap.AddFlags, true)
+			flags := []interface{}{imap.DeletedFlag}
+			err = c.Store(seqset, item, flags, nil)
+			if err != nil {
+				s.api.LogError(err.Error())
+			}
+		}
 
-		s.api.LogInfo("------------ START MESSAGE ------------")
-		s.api.LogInfo("- Subject: " + msg.Envelope.Subject)
-		s.api.LogInfo("- From: " + fromAddress)
-		s.api.LogInfo("- InReplyTo: " + msg.Envelope.InReplyTo)
-		s.api.LogInfo("- MessageId: " + msg.Envelope.MessageId)
-		s.api.LogInfo(fmt.Sprintf("- Message Body: %+v", string(body)[:10]))
-		s.api.LogInfo("------------- END MESSAGE -------------")
+		postID := s.postIDFromEmailBody(string(body))
+		if len(postID) != 26 {
+			deleteMessage()
+			continue
+		}
+
 	}
 
 	if err := <-done; err != nil {
 		s.api.LogError(err.Error())
 	}
 
-	s.api.LogInfo("End poll")
-	s.api.LogInfo("============================")
 	// TODO:
 	// 1. Retrieve emails.
 	// 2. Delete non-pertinent ones (don't have the subject, message-id header, and potentially the post hyperlink).
@@ -122,14 +120,23 @@ func (s *Server) checkMailbox() {
 	// 		- If post id is not in a thread then create a thread and create the send message as reply.
 	//		- If post id is in a thread and it's the last message in the thread then append a message to the thread.
 	//		- If post id is in a thread but not the last message then quote the original message in the new post body.
+	// 6. Delete email.
 }
 
 func (s *Server) StartPolling() {
-	s.api.LogInfo("Starting Polling...")
-	s.api.LogInfo(fmt.Sprintf("Server: %s, Security: %s, Email: %s, Password: %s", s.server, s.security, s.email, s.password))
-
 	ticker := time.NewTicker(time.Duration(s.pollingInterval) * time.Second)
 	for range ticker.C {
+		s.api.LogInfo("poll")
 		s.checkMailbox()
 	}
+}
+
+func (s *Server) postIDFromEmailBody(emailBody string) string {
+	var postID string
+	re := regexp.MustCompile(`https?:\/\/.*\/pl\/[a-z0-9]{26}`)
+	match := re.FindString(emailBody)
+	if len(match) >= 26 {
+		postID = match[len(match)-26:]
+	}
+	return postID
 }
