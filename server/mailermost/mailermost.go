@@ -6,8 +6,10 @@ import (
 	"net/mail"
 	"regexp"
 	"strconv"
-	"time"
 	"strings"
+	"time"
+
+	"github.com/mattermost/mattermost-server/model"
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -90,7 +92,7 @@ func (s *Server) checkMailbox() {
 			continue
 		}
 
-		// fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
+		fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
 		deleteMessage := func() {
 			item := imap.FormatFlagsOp(imap.AddFlags, true)
 			flags := []interface{}{imap.DeletedFlag}
@@ -107,8 +109,29 @@ func (s *Server) checkMailbox() {
 		}
 
 		messageText := s.extractMessage(string(body))
-		s.api.LogInfo(fmt.Sprintf("Message text %v", messageText))
-		// GET USER
+		s.api.LogDebug(fmt.Sprintf("messageText: %s", messageText))
+
+		var appErr *model.AppError
+		var user *model.User
+		user, appErr = s.api.GetUserByEmail(fromAddress)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("err: %#v", appErr))
+			deleteMessage()
+			continue
+		}
+
+		s.api.LogDebug(fmt.Sprintf("user: %+v", user))
+
+		var post *model.Post
+		post, appErr = s.api.GetPost(postID)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("err: %#v", appErr))
+			deleteMessage()
+			continue
+		}
+
+		s.api.LogDebug(fmt.Sprintf("post: %+v", post))
+
 		// CHECK PERMISSIONS
 		// POST MESSAGE
 	}
