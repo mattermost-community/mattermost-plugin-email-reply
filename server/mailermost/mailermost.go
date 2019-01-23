@@ -115,7 +115,7 @@ func (s *Server) checkMailbox() {
 		var user *model.User
 		user, appErr = s.api.GetUserByEmail(fromAddress)
 		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("err: %#v", appErr))
+			s.api.LogError(appErr.Error())
 			deleteMessage()
 			continue
 		}
@@ -125,15 +125,21 @@ func (s *Server) checkMailbox() {
 		var post *model.Post
 		post, appErr = s.api.GetPost(postID)
 		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("err: %#v", appErr))
+			s.api.LogError(appErr.Error())
 			deleteMessage()
 			continue
 		}
 
 		s.api.LogDebug(fmt.Sprintf("post: %+v", post))
 
-		// CHECK PERMISSIONS
-		// POST MESSAGE
+		_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
+		if appErr != nil {
+			s.api.LogError(appErr.Error())
+			// deleteMessage()
+			continue
+		}
+
+		// POST MESSAGE`
 	}
 
 	if err := <-done; err != nil {
