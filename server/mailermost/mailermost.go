@@ -107,7 +107,6 @@ func (s *Server) checkMailbox() {
 
 		postID := s.postIDFromEmailBody(string(body))
 		if !model.IsValidId(postID) {
-			deleteMessage()
 			continue
 		}
 
@@ -119,7 +118,6 @@ func (s *Server) checkMailbox() {
 		user, appErr = s.api.GetUserByEmail(fromAddress)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get user with email %s: %s", fromAddress, appErr.Error()))
-			deleteMessage()
 			continue
 		}
 
@@ -127,14 +125,12 @@ func (s *Server) checkMailbox() {
 		post, appErr = s.api.GetPost(postID)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
-			deleteMessage()
 			continue
 		}
 
 		_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
-			deleteMessage()
 			continue
 		}
 
