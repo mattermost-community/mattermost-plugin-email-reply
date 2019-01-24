@@ -16,6 +16,9 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 )
 
+const emailStartEnd string = "\r\n\r\n"
+const postIDUrlRe string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
+
 type Server struct {
 	api             plugin.API
 	server          string
@@ -46,18 +49,17 @@ func NewServer(api plugin.API, server, security, email, password, pollingInterva
 func (s *Server) checkMailbox() {
 	c, err := client.DialTLS(s.server, nil)
 	if err != nil {
-
-		s.api.LogError(err.Error())
+		s.api.LogError(fmt.Sprintf("failure dialing TLS: %s", err.Error()))
 	}
 
 	if err := c.Login(s.email, s.password); err != nil {
-		s.api.LogError(err.Error())
+		s.api.LogError(fmt.Sprintf("failure loging into email for user %s: %s", s.email, err.Error()))
 	}
 	defer c.Logout()
 
 	mbox, err := c.Select("INBOX", false)
 	if err != nil {
-		s.api.LogError(err.Error())
+		s.api.LogError(fmt.Sprintf("failed to get INBOX: %s", err.Error()))
 	}
 
 	from := uint32(1)
@@ -76,7 +78,7 @@ func (s *Server) checkMailbox() {
 	for msg := range messages {
 		r := msg.GetBody(section)
 		if r == nil {
-			s.api.LogError(fmt.Sprintf("Server didn't returned message body for subject %v", msg.Envelope.Subject))
+			s.api.LogError(fmt.Sprintf("failed to get message body of email with subject %s", msg.Envelope.Subject))
 			continue
 		}
 
@@ -88,102 +90,122 @@ func (s *Server) checkMailbox() {
 
 		body, err := ioutil.ReadAll(m.Body)
 		if err != nil {
-			s.api.LogError("Couldn't read message's body")
+			s.api.LogError(fmt.Sprintf("failed to read message body: %s", err.Error()))
 			continue
 		}
 
 		fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
+
 		deleteMessage := func() {
 			item := imap.FormatFlagsOp(imap.AddFlags, true)
 			flags := []interface{}{imap.DeletedFlag}
 			err = c.Store(seqset, item, flags, nil)
 			if err != nil {
-				s.api.LogError(err.Error())
+				s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", seqset.String(), err.Error()))
 			}
 		}
 
 		postID := s.postIDFromEmailBody(string(body))
-		if len(postID) != 26 {
+		if !model.IsValidId(postID) {
 			deleteMessage()
 			continue
 		}
 
 		messageText := s.extractMessage(string(body))
-		s.api.LogDebug(fmt.Sprintf("messageText: %s", messageText))
 
 		var appErr *model.AppError
+
 		var user *model.User
 		user, appErr = s.api.GetUserByEmail(fromAddress)
 		if appErr != nil {
-			s.api.LogError(appErr.Error())
+			s.api.LogError(fmt.Sprintf("failed to get user with email %s: %s", fromAddress, appErr.Error()))
 			deleteMessage()
 			continue
 		}
-
-		s.api.LogDebug(fmt.Sprintf("user: %+v", user))
 
 		var post *model.Post
 		post, appErr = s.api.GetPost(postID)
 		if appErr != nil {
-			s.api.LogError(appErr.Error())
+			s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
 			deleteMessage()
 			continue
 		}
 
-		s.api.LogDebug(fmt.Sprintf("post: %+v", post))
-
 		_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
 		if appErr != nil {
-			s.api.LogError(appErr.Error())
-			// deleteMessage()
+			s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
+			deleteMessage()
 			continue
 		}
 
-		// POST MESSAGE`
+		postList, appErr := s.api.GetPostThread(postID)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
+			continue
+		}
+
+		var lastPostID string
+		for k := range postList.Posts {
+			lastPostID = k
+		}
+
+		lastPostInThread := *postList.Posts[lastPostID]
+
+		if len(postList.Posts) > 1 && lastPostInThread.Id != post.Id {
+			messageText = fmt.Sprintf("> %s\n\n%s", post.Message, messageText)
+		}
+
+		newPost := &model.Post{
+			UserId:    user.Id,
+			ChannelId: post.ChannelId,
+			Message:   messageText,
+			ParentId:  post.Id,
+			RootId:    post.Id,
+		}
+
+		_, appErr = s.api.CreatePost(newPost)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
+			continue
+		}
+
+		deleteMessage()
+
 	}
 
 	if err := <-done; err != nil {
 		s.api.LogError(err.Error())
 	}
-
-	// TODO:
-	// 1. Retrieve emails.
-	// 2. Delete non-pertinent ones (don't have the subject, message-id header, and potentially the post hyperlink).
-	// 3. Parse-out the potential post message from the email. If it's blank then return.
-	// 4. Verify that the 'from' email address matches a MM user who is allowed to post to channel.
-	// 5.
-	// 		- If post id is not in a thread then create a thread and create the send message as reply.
-	//		- If post id is in a thread and it's the last message in the thread then append a message to the thread.
-	//		- If post id is in a thread but not the last message then quote the original message in the new post body.
-	// 6. Delete email.
 }
 
 func (s *Server) StartPolling() {
 	ticker := time.NewTicker(time.Duration(s.pollingInterval) * time.Second)
 	for range ticker.C {
-		s.api.LogInfo("poll")
 		s.checkMailbox()
 	}
 }
 
 func (s *Server) postIDFromEmailBody(emailBody string) string {
 	var postID string
-	re := regexp.MustCompile(`https?:\/\/.*\/pl\/[a-z0-9]{26}`)
+
+	re := regexp.MustCompile(postIDUrlRe)
 	match := re.FindString(emailBody)
 	if len(match) >= 26 {
 		postID = match[len(match)-26:]
 	}
+
 	return postID
 }
 
 func (s *Server) extractMessage(body string) string {
 	bodyWithoutHeaders := body
-	firstIdx := strings.Index(body, "\r\n\r\n")
+
+	firstIdx := strings.Index(body, emailStartEnd)
 	if firstIdx != -1 {
 		bodyWithoutHeaders = body[firstIdx+4:]
 	}
 
-	lastIdx := strings.Index(bodyWithoutHeaders, "\r\n\r\n")
+	lastIdx := strings.Index(bodyWithoutHeaders, emailStartEnd)
 	cleanBody := bodyWithoutHeaders
 	if lastIdx != -1 {
 		cleanBody = bodyWithoutHeaders[:lastIdx]
