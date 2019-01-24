@@ -15,11 +15,15 @@ func TestConfiguration(t *testing.T) {
 	t.Run("changing configuration", func(t *testing.T) {
 		plugin := &Plugin{}
 
-		configuration1 := &configuration{disabled: false}
+		configuration1 := &configuration{
+			// disabled: false
+		}
 		plugin.setConfiguration(configuration1)
 		assert.Equal(t, configuration1, plugin.getConfiguration())
 
-		configuration2 := &configuration{disabled: true}
+		configuration2 := &configuration{
+			// disabled: true
+		}
 		plugin.setConfiguration(configuration2)
 		assert.Equal(t, configuration2, plugin.getConfiguration())
 		assert.NotEqual(t, configuration1, plugin.getConfiguration())
@@ -40,7 +44,9 @@ func TestConfiguration(t *testing.T) {
 	t.Run("clearing configuration", func(t *testing.T) {
 		plugin := &Plugin{}
 
-		configuration1 := &configuration{disabled: true}
+		configuration1 := &configuration{
+			// disabled: true
+		}
 		plugin.setConfiguration(configuration1)
 		assert.NotPanics(t, func() {
 			plugin.setConfiguration(nil)

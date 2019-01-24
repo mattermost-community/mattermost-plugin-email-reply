@@ -10,11 +10,11 @@ import (
 )
 
 func TestOnActivate(t *testing.T) {
-	teamId := model.NewId()
-	channelId := model.NewId()
-	demoChannelIds := map[string]string{
-		teamId: channelId,
-	}
+	// teamId := model.NewId()
+	// channelId := model.NewId()
+	// demoChannelIds := map[string]string{
+	// 	teamId: channelId,
+	// }
 
 	for name, test := range map[string]struct {
 		SetupAPI    func() *plugintest.API
@@ -43,7 +43,7 @@ func TestOnActivate(t *testing.T) {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
 				api.On("GetServerVersion").Return("5.4.0")
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{})
 
 				return api
@@ -54,7 +54,7 @@ func TestOnActivate(t *testing.T) {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
 				api.On("GetServerVersion").Return("5.4.0")
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, nil)
 				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(&model.AppError{})
 
@@ -66,7 +66,7 @@ func TestOnActivate(t *testing.T) {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
 				api.On("GetServerVersion").Return("5.4.0")
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, nil)
 				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 
@@ -78,7 +78,7 @@ func TestOnActivate(t *testing.T) {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
 				api.On("GetServerVersion").Return("5.5.0")
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, nil)
 				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 
@@ -93,7 +93,7 @@ func TestOnActivate(t *testing.T) {
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
-				demoChannelIds: demoChannelIds,
+				// demoChannelIds: demoChannelIds,
 			})
 			p.SetAPI(api)
 			err := p.OnActivate()
@@ -108,11 +108,11 @@ func TestOnActivate(t *testing.T) {
 }
 
 func TestOnDeactivate(t *testing.T) {
-	teamId := model.NewId()
-	channelId := model.NewId()
-	demoChannelIds := map[string]string{
-		teamId: channelId,
-	}
+	// teamId := model.NewId()
+	// channelId := model.NewId()
+	// demoChannelIds := map[string]string{
+	// 	teamId: channelId,
+	// }
 
 	for name, test := range map[string]struct {
 		SetupAPI    func() *plugintest.API
@@ -121,7 +121,7 @@ func TestOnDeactivate(t *testing.T) {
 		"all fine": {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, nil)
 				api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 
@@ -141,7 +141,7 @@ func TestOnDeactivate(t *testing.T) {
 		"CreatePost fails": {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{})
 
 				return api
@@ -151,7 +151,7 @@ func TestOnDeactivate(t *testing.T) {
 		"RegisterCommand fails": {
 			SetupAPI: func() *plugintest.API {
 				api := &plugintest.API{}
-				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: teamId}}, nil)
+				api.On("GetTeams").Return([]*model.Team{&model.Team{Id: ""}}, nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, nil)
 				api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(&model.AppError{})
 
@@ -166,7 +166,7 @@ func TestOnDeactivate(t *testing.T) {
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
-				demoChannelIds: demoChannelIds,
+				// demoChannelIds: demoChannelIds,
 			})
 			p.SetAPI(api)
 			err := p.OnDeactivate()
