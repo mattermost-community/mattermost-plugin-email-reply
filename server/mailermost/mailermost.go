@@ -19,7 +19,7 @@ import (
 const (
 	emailStartEnd     string = "\r\n\r\n"
 	postIDUrlRe       string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
-	emailLineEndingRe string = `=\n`
+	emailLineEndingRe string = `=\r\n`
 	mailboxName       string = "INBOX"
 )
 
