@@ -6,6 +6,7 @@ import (
 	"mime/quotedprintable"
 	"net/mail"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -149,17 +150,18 @@ func (s *Server) checkMailbox() {
 			continue
 		}
 
-		postList.SortByCreateAt()
-		var lastPostID string
-		for k := range postList.Posts {
-			if lastPostID != "" {
-				break
-			}
-			lastPostID = k
+		threadPosts := make([]*model.Post, 0)
+		for _, v := range postList.Posts {
+			threadPosts = append(threadPosts, v)
 		}
-		lastPostInThread := *postList.Posts[lastPostID]
+		sort.Slice(threadPosts, func(i, j int) bool {
+			return threadPosts[i].CreateAt > threadPosts[j].CreateAt
+		})
 
-		if len(postList.Posts) > 1 && lastPostInThread.Id != post.Id {
+		rootPost := threadPosts[len(threadPosts)-1]
+		lastPost := threadPosts[0]
+
+		if len(postList.Posts) > 1 && lastPost.Id != post.Id {
 			if len(post.Message) > ellipsisLen {
 				messageText = fmt.Sprintf("> %s...\n\n%s", post.Message[:ellipsisLen], messageText)
 			} else {
@@ -171,8 +173,8 @@ func (s *Server) checkMailbox() {
 			UserId:    user.Id,
 			ChannelId: post.ChannelId,
 			Message:   messageText,
-			ParentId:  post.Id,
-			RootId:    post.Id,
+			ParentId:  rootPost.Id,
+			RootId:    rootPost.Id,
 		}
 
 		_, appErr = s.api.CreatePost(newPost)
