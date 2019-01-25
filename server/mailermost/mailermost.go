@@ -22,6 +22,7 @@ const (
 	postIDUrlRe       string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
 	emailLineEndingRe string = `=\r\n`
 	mailboxName       string = "INBOX"
+	ellipsisLen       int    = 10
 )
 
 type Server struct {
@@ -156,7 +157,11 @@ func (s *Server) checkMailbox() {
 		lastPostInThread := *postList.Posts[lastPostID]
 
 		if len(postList.Posts) > 1 && lastPostInThread.Id != post.Id {
-			messageText = fmt.Sprintf("> %s\n\n%s", post.Message, messageText)
+			if len(post.Message) > ellipsisLen {
+				messageText = fmt.Sprintf("> %s...\n\n%s", post.Message[:ellipsisLen], messageText)
+			} else {
+				messageText = fmt.Sprintf("> %s\n\n%s", post.Message, messageText)
+			}
 		}
 
 		newPost := &model.Post{
