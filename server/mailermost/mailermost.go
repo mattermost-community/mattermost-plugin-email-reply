@@ -3,6 +3,7 @@ package mailermost
 import (
 	"fmt"
 	"io/ioutil"
+	"mime/quotedprintable"
 	"net/mail"
 	"regexp"
 	"strconv"
@@ -216,5 +217,9 @@ func (s *Server) extractMessage(body string) string {
 		cleanBody = bodyWithoutHeaders[:lastIdx]
 	}
 
-	return cleanBody
+	reader := strings.NewReader(cleanBody)
+	quotedprintableReader := quotedprintable.NewReader(reader)
+	message, _ := ioutil.ReadAll(quotedprintableReader)
+
+	return string(message)
 }
