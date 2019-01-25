@@ -76,21 +76,23 @@ func (s *Server) checkMailbox() {
 	}()
 
 	for msg := range messages {
+		messageID := msg.Envelope.MessageId
+
 		r := msg.GetBody(section)
 		if r == nil {
-			s.api.LogError(fmt.Sprintf("failed to get message body of email with subject %s", msg.Envelope.Subject))
+			s.api.LogError(fmt.Sprintf("failed to get message body of email %s", messageID))
 			continue
 		}
 
 		m, err := mail.ReadMessage(r)
 		if err != nil {
-			s.api.LogError(err.Error())
+			s.api.LogError(fmt.Sprintf("failure reading email %s: %s", messageID, err.Error()))
 			continue
 		}
 
 		body, err := ioutil.ReadAll(m.Body)
 		if err != nil {
-			s.api.LogError(fmt.Sprintf("failed to read message body: %s", err.Error()))
+			s.api.LogError(fmt.Sprintf("failed to read message body of email %s: %s", messageID, err.Error()))
 			continue
 		}
 
@@ -101,12 +103,13 @@ func (s *Server) checkMailbox() {
 			flags := []interface{}{imap.DeletedFlag}
 			err = c.Store(seqset, item, flags, nil)
 			if err != nil {
-				s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", seqset.String(), err.Error()))
+				s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
 			}
 		}
 
 		postID := s.postIDFromEmailBody(string(body))
 		if !model.IsValidId(postID) {
+			s.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
 			continue
 		}
 
@@ -117,7 +120,7 @@ func (s *Server) checkMailbox() {
 		var user *model.User
 		user, appErr = s.api.GetUserByEmail(fromAddress)
 		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get user with email %s: %s", fromAddress, appErr.Error()))
+			s.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
 			continue
 		}
 
