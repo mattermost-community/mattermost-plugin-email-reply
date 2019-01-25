@@ -16,8 +16,12 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 )
 
-const emailStartEnd string = "\r\n\r\n"
-const postIDUrlRe string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
+const (
+	emailStartEnd     string = "\r\n\r\n"
+	postIDUrlRe       string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
+	emailLineEndingRe string = `=\n`
+	mailboxName       string = "INBOX"
+)
 
 type Server struct {
 	api             plugin.API
@@ -57,9 +61,9 @@ func (s *Server) checkMailbox() {
 	}
 	defer c.Logout()
 
-	mbox, err := c.Select("INBOX", false)
+	mbox, err := c.Select(mailboxName, false)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failed to get INBOX: %s", err.Error()))
+		s.api.LogError(fmt.Sprintf("failed to get %s: %s", mailboxName, err.Error()))
 	}
 
 	from := uint32(1)
@@ -187,8 +191,10 @@ func (s *Server) StartPolling() {
 func (s *Server) postIDFromEmailBody(emailBody string) string {
 	var postID string
 
-	re := regexp.MustCompile(postIDUrlRe)
-	match := re.FindString(emailBody)
+	postIDRe := regexp.MustCompile(postIDUrlRe)
+	lineEndingRe := regexp.MustCompile(emailLineEndingRe)
+	emailBody = lineEndingRe.ReplaceAllString(emailBody, "")
+	match := postIDRe.FindString(emailBody)
 	if len(match) >= 26 {
 		postID = match[len(match)-26:]
 	}
