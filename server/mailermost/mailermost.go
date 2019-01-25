@@ -160,10 +160,26 @@ func (s *Server) checkMailbox() {
 		lastPostInThread := *postList.Posts[lastPostID]
 
 		if len(postList.Posts) > 1 && lastPostInThread.Id != post.Id {
+			var channel *model.Channel
+			channel, appErr = s.api.GetChannel(post.ChannelId)
+			if appErr != nil {
+				s.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
+				continue
+			}
+
+			var team *model.Team
+			team, appErr = s.api.GetTeam(channel.TeamId)
+			if appErr != nil {
+				s.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
+				continue
+			}
+
+			postPl := "/" + team.Name + "/pl/" + post.Id
+
 			if len(post.Message) > ellipsisLen {
-				messageText = fmt.Sprintf("> %s...\n\n%s", post.Message[:ellipsisLen], messageText)
+				messageText = fmt.Sprintf("> [%s](%s)...\n\n%s", post.Message[:ellipsisLen], postPl, messageText)
 			} else {
-				messageText = fmt.Sprintf("> %s\n\n%s", post.Message, messageText)
+				messageText = fmt.Sprintf("> [%s](%s)\n\n%s", post.Message, postPl, messageText)
 			}
 		}
 
@@ -182,7 +198,6 @@ func (s *Server) checkMailbox() {
 		}
 
 		deleteMessage()
-
 	}
 
 	if err := <-done; err != nil {
