@@ -5,5 +5,5 @@ var manifest = struct {
 	Version string
 }{
 	Id:      "com.mattermost.mailermost-plugin",
-	Version: "0.0.6",
+	Version: "0.0.7",
 }
