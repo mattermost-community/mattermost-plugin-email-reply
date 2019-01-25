@@ -148,11 +148,14 @@ func (s *Server) checkMailbox() {
 			continue
 		}
 
+		postList.SortByCreateAt()
 		var lastPostID string
 		for k := range postList.Posts {
+			if lastPostID != "" {
+				break
+			}
 			lastPostID = k
 		}
-
 		lastPostInThread := *postList.Posts[lastPostID]
 
 		if len(postList.Posts) > 1 && lastPostInThread.Id != post.Id {
