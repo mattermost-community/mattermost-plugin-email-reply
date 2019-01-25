@@ -23,7 +23,7 @@ const (
 	postIDUrlRe       string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
 	emailLineEndingRe string = `=\r\n`
 	mailboxName       string = "INBOX"
-	ellipsisLen       int    = 10
+	ellipsisLen       int    = 50
 )
 
 type Server struct {
