@@ -121,6 +121,10 @@ func (s *Server) checkMailbox() {
 		}
 
 		messageText := s.extractMessage(string(body))
+		if len(messageText) == 0 {
+			s.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
+			continue
+		}
 
 		var appErr *model.AppError
 
@@ -246,5 +250,5 @@ func (s *Server) extractMessage(body string) string {
 	quotedprintableReader := quotedprintable.NewReader(reader)
 	message, _ := ioutil.ReadAll(quotedprintableReader)
 
-	return string(message)
+	return strings.TrimSpace(string(message))
 }
