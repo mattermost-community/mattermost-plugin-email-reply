@@ -105,24 +105,17 @@ func (s *Client) checkMailbox() {
 
 		fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
 
-		deleteMessage := func() {
-			item := imap.FormatFlagsOp(imap.AddFlags, true)
-			flags := []interface{}{imap.DeletedFlag}
-			err = c.Store(seqset, item, flags, nil)
-			if err != nil {
-				s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
-			}
-		}
-
 		postID := s.postIDFromEmailBody(string(body))
 		if !model.IsValidId(postID) {
 			s.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
 		messageText := s.extractMessage(string(body))
 		if len(messageText) == 0 {
 			s.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
@@ -132,6 +125,7 @@ func (s *Client) checkMailbox() {
 		user, appErr = s.api.GetUserByEmail(fromAddress)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
@@ -139,18 +133,21 @@ func (s *Client) checkMailbox() {
 		post, appErr = s.api.GetPost(postID)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
 		_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
 		postList, appErr := s.api.GetPostThread(postID)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
 			continue
 		}
 
@@ -170,6 +167,7 @@ func (s *Client) checkMailbox() {
 			channel, appErr = s.api.GetChannel(post.ChannelId)
 			if appErr != nil {
 				s.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
+				s.deleteMessage(c, seqset, messageID)
 				continue
 			}
 
@@ -177,6 +175,7 @@ func (s *Client) checkMailbox() {
 			team, appErr = s.api.GetTeam(channel.TeamId)
 			if appErr != nil {
 				s.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
+				s.deleteMessage(c, seqset, messageID)
 				continue
 			}
 
@@ -200,14 +199,24 @@ func (s *Client) checkMailbox() {
 		_, appErr = s.api.CreatePost(newPost)
 		if appErr != nil {
 			s.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
+			// Do not delete the inbound email in this failure case because everything about the inbound email has been valid so far.
 			continue
 		}
 
-		deleteMessage()
+		s.deleteMessage(c, seqset, messageID)
 	}
 
 	if err := <-done; err != nil {
 		s.api.LogError(err.Error())
+	}
+}
+
+func (s *Client) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID string) {
+	item := imap.FormatFlagsOp(imap.AddFlags, true)
+	flags := []interface{}{imap.DeletedFlag}
+	err := c.Store(seqset, item, flags, nil)
+	if err != nil {
+		s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
 	}
 }
 
