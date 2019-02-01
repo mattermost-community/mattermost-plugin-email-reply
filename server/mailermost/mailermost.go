@@ -26,7 +26,7 @@ const (
 	ellipsisLen       int    = 50
 )
 
-type Server struct {
+type Client struct {
 	api             plugin.API
 	server          string
 	security        string
@@ -35,8 +35,8 @@ type Server struct {
 	pollingInterval int
 }
 
-func NewServer(api plugin.API, server, security, email, password, pollingInterval string) (*Server, error) {
-	s := &Server{
+func NewClient(api plugin.API, server, security, email, password, pollingInterval string) (*Client, error) {
+	s := &Client{
 		api:      api,
 		server:   server,
 		security: security,
@@ -53,7 +53,7 @@ func NewServer(api plugin.API, server, security, email, password, pollingInterva
 	return s, nil
 }
 
-func (s *Server) checkMailbox() {
+func (s *Client) checkMailbox() {
 	c, err := client.DialTLS(s.server, nil)
 	if err != nil {
 		s.api.LogError(fmt.Sprintf("failure dialing TLS: %s", err.Error()))
@@ -211,14 +211,15 @@ func (s *Server) checkMailbox() {
 	}
 }
 
-func (s *Server) StartPolling() {
+// StartPolling starts checking the configured email mailbox on the configured interval.
+func (s *Client) StartPolling() {
 	ticker := time.NewTicker(time.Duration(s.pollingInterval) * time.Second)
 	for range ticker.C {
 		s.checkMailbox()
 	}
 }
 
-func (s *Server) postIDFromEmailBody(emailBody string) string {
+func (s *Client) postIDFromEmailBody(emailBody string) string {
 	var postID string
 
 	postIDRe := regexp.MustCompile(postIDUrlRe)
@@ -232,7 +233,7 @@ func (s *Server) postIDFromEmailBody(emailBody string) string {
 	return postID
 }
 
-func (s *Server) extractMessage(body string) string {
+func (s *Client) extractMessage(body string) string {
 	bodyWithoutHeaders := body
 
 	firstIdx := strings.Index(body, emailStartEnd)

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/DSchalla/mailermost-plugin/server/mailermost"
 	"sync"
+
+	"github.com/DSchalla/mailermost-plugin/server/mailermost"
 
 	"github.com/mattermost/mattermost-server/plugin"
 )
@@ -10,7 +11,7 @@ import (
 type Plugin struct {
 	plugin.MattermostPlugin
 
-	Server *mailermost.Server
+	Client *mailermost.Client
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
