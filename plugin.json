@@ -45,14 +45,6 @@
         ]
       },
       {
-        "key": "email",
-        "display_name": "IMAP eMail",
-        "type": "text",
-        "help_text": "IMAP eMail used to login",
-        "placeholder": "reply-to@example.com",
-        "default": ""
-      },
-      {
         "key": "password",
         "display_name": "IMAP Password",
         "type": "text",

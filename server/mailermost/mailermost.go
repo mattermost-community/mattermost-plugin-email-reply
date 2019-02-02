@@ -35,12 +35,12 @@ type Client struct {
 	pollingInterval int
 }
 
-func NewClient(api plugin.API, server, security, email, password, pollingInterval string) (*Client, error) {
+func NewClient(api plugin.API, server, security, password, pollingInterval string) (*Client, error) {
 	s := &Client{
 		api:      api,
 		server:   server,
 		security: security,
-		email:    email,
+		email:    *api.GetConfig().EmailSettings.ReplyToAddress,
 		password: password,
 	}
 

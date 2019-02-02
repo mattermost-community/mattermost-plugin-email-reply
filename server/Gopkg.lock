@@ -93,11 +93,11 @@
   revision = "e45cbeb79f0411b1cfedd3f226ff69d5d433c762"
 
 [[projects]]
-  digest = "1:af00abbd22cc527703068245c819a5f53567918f8c088157a4c01dd6244b58fb"
+  digest = "1:e34b211a329e5b3af38f4794aca585e329e0db3f5328756ea2c4e0796ed0bb77"
   name = "github.com/hashicorp/go-plugin"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "a4620f9913d19f03a6bf19b2f304daaaf83ea130"
+  revision = "54b6ff97d8180dbbd93d2010dd4a92c86f604bb8"
 
 [[projects]]
   digest = "1:11c6c696067d3127ecf332b10f89394d386d9083f82baf71f40f2da31841a009"
@@ -135,7 +135,8 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:3f4e17f315dbf76597fe7c75d67a40cca9ec9bd4ed3f8589ee42457bc6bd685d"
+  branch = "replytoemail-core-change"
+  digest = "1:1174638abad85d48a7d4cfac68f0a82852468ec0b6e557d1f22a9796580f72c9"
   name = "github.com/mattermost/mattermost-server"
   packages = [
     "einterfaces",
@@ -143,13 +144,14 @@
     "model",
     "plugin",
     "plugin/plugintest",
+    "services/timezones",
     "utils",
+    "utils/fileutils",
     "utils/jsonutils",
     "utils/markdown",
   ]
   pruneopts = "NUT"
-  revision = "eb65ce62243dcf3ad54fc46e7a03036099656c54"
-  version = "v5.6.3"
+  revision = "fb8c422062569358630cabfd83b83681ad69293d"
 
 [[projects]]
   branch = "mattermost"
@@ -447,6 +449,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/blang/semver",
+    "github.com/emersion/go-imap",
     "github.com/emersion/go-imap/client",
     "github.com/mattermost/mattermost-server/model",
     "github.com/mattermost/mattermost-server/plugin",
