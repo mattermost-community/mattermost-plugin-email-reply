@@ -1,7 +1,7 @@
 {
   "id": "com.mattermost.mailermost-plugin",
   "name": "Mailermost Plugin",
-  "description": "This plugin demonstrates the capabilities of a Mattermost plugin.",
+  "description": "Replying to notification emails sends the reply as a post in Mattermost.",
   "version": "0.0.7",
   "server": {
     "executables": {
@@ -12,22 +12,19 @@
     "executable": ""
   },
   "settings_schema": {
-    "header": "",
+    "header": "Configure the IMAP connection information for the email address that response emails will be sent to. The email address used is the address set in `EmailSettings.ReplyToAddress` in the Mattermost config.",
     "footer": "",
     "settings": [
       {
         "key": "server",
-        "display_name": "IMAP Server/Port",
+        "display_name": "IMAP Server and Port",
         "type": "text",
-        "help_text": "IMAP Server and Port for polling response eMails",
-        "placeholder": "example.com:443",
-        "default": ""
+        "placeholder": "imap.example.com:443"
       },
       {
         "key": "security",
         "display_name": "IMAP Security",
         "type": "dropdown",
-        "help_text": "Use SSL or TLS to connect to the server?",
         "default": "ssl",
         "options": [
           {
@@ -47,18 +44,12 @@
       {
         "key": "password",
         "display_name": "IMAP Password",
-        "type": "text",
-        "help_text": "IMAP password used to login",
-        "placeholder": "hunter2",
-        "default": ""
+        "type": "text"
       },
       {
         "key": "polling_interval",
-        "display_name": "Polling Interval (in seconds)",
-        "type": "text",
-        "help_text": "How often to fetch eMail from the inbox",
-        "placeholder": "5",
-        "default": ""
+        "display_name": "Polling Interval (seconds)",
+        "type": "text"
       }
     ]
   }
