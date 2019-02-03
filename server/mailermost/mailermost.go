@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	emailStartEnd     string = "\r\n\r\n"
-	postIDUrlRe       string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
-	emailLineEndingRe string = `=\r\n`
-	mailboxName       string = "INBOX"
-	ellipsisLen       int    = 50
+	emailStartEnd        string = "\r\n\r\n"
+	postIDUrlRe          string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
+	emailLineEndingRe    string = `=\r\n`
+	mailboxName          string = "INBOX"
+	ellipsisLen          int    = 50
+	maxEmailsPerInterval        = 1000
 )
 
 type Client struct {
@@ -75,7 +76,7 @@ func (s *Client) checkMailbox() {
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
 
-	messages := make(chan *imap.Message, 10)
+	messages := make(chan *imap.Message, maxEmailsPerInterval)
 	done := make(chan error, 1)
 	section := &imap.BodySectionName{}
 	go func() {
@@ -83,132 +84,136 @@ func (s *Client) checkMailbox() {
 	}()
 
 	for msg := range messages {
-		messageID := msg.Envelope.MessageId
-
-		r := msg.GetBody(section)
-		if r == nil {
-			s.api.LogError(fmt.Sprintf("failed to get message body of email %s", messageID))
-			continue
-		}
-
-		m, err := mail.ReadMessage(r)
-		if err != nil {
-			s.api.LogError(fmt.Sprintf("failure reading email %s: %s", messageID, err.Error()))
-			continue
-		}
-
-		body, err := ioutil.ReadAll(m.Body)
-		if err != nil {
-			s.api.LogError(fmt.Sprintf("failed to read message body of email %s: %s", messageID, err.Error()))
-			continue
-		}
-
-		fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
-
-		postID := s.postIDFromEmailBody(string(body))
-		if !model.IsValidId(postID) {
-			s.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		messageText := s.extractMessage(string(body))
-		if len(messageText) == 0 {
-			s.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		var appErr *model.AppError
-
-		var user *model.User
-		user, appErr = s.api.GetUserByEmail(fromAddress)
-		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		var post *model.Post
-		post, appErr = s.api.GetPost(postID)
-		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
-		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		postList, appErr := s.api.GetPostThread(postID)
-		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
-			continue
-		}
-
-		threadPosts := make([]*model.Post, 0)
-		for _, v := range postList.Posts {
-			threadPosts = append(threadPosts, v)
-		}
-		sort.Slice(threadPosts, func(i, j int) bool {
-			return threadPosts[i].CreateAt > threadPosts[j].CreateAt
-		})
-
-		rootPost := threadPosts[len(threadPosts)-1]
-		lastPost := threadPosts[0]
-
-		if len(postList.Posts) > 1 && lastPost.Id != post.Id {
-			var channel *model.Channel
-			channel, appErr = s.api.GetChannel(post.ChannelId)
-			if appErr != nil {
-				s.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
-				s.deleteMessage(c, seqset, messageID)
-				continue
-			}
-
-			var team *model.Team
-			team, appErr = s.api.GetTeam(channel.TeamId)
-			if appErr != nil {
-				s.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
-				s.deleteMessage(c, seqset, messageID)
-				continue
-			}
-
-			postPl := "/" + team.Name + "/pl/" + post.Id
-
-			if len(post.Message) > ellipsisLen {
-				messageText = fmt.Sprintf("> [%s](%s)...\n\n%s", post.Message[:ellipsisLen], postPl, messageText)
-			} else {
-				messageText = fmt.Sprintf("> [%s](%s)\n\n%s", post.Message, postPl, messageText)
-			}
-		}
-
-		newPost := &model.Post{
-			UserId:    user.Id,
-			ChannelId: post.ChannelId,
-			Message:   messageText,
-			ParentId:  rootPost.Id,
-			RootId:    rootPost.Id,
-		}
-
-		_, appErr = s.api.CreatePost(newPost)
-		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
-			// Do not delete the inbound email in this failure case because everything about the inbound email has been valid so far.
-			continue
-		}
-
-		s.deleteMessage(c, seqset, messageID)
+		s.processEmail(msg, section, seqset, c)
 	}
 
 	if err := <-done; err != nil {
 		s.api.LogError(err.Error())
 	}
+}
+
+func (s *Client) processEmail(msg *imap.Message, section *imap.BodySectionName, seqset *imap.SeqSet, c *client.Client) {
+	messageID := msg.Envelope.MessageId
+
+	r := msg.GetBody(section)
+	if r == nil {
+		s.api.LogError(fmt.Sprintf("failed to get message body of email %s", messageID))
+		return
+	}
+
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		s.api.LogError(fmt.Sprintf("failure reading email %s: %s", messageID, err.Error()))
+		return
+	}
+
+	body, err := ioutil.ReadAll(m.Body)
+	if err != nil {
+		s.api.LogError(fmt.Sprintf("failed to read message body of email %s: %s", messageID, err.Error()))
+		return
+	}
+
+	fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
+
+	postID := s.postIDFromEmailBody(string(body))
+	if !model.IsValidId(postID) {
+		s.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	messageText := s.extractMessage(string(body))
+	if len(messageText) == 0 {
+		s.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	var appErr *model.AppError
+
+	var user *model.User
+	user, appErr = s.api.GetUserByEmail(fromAddress)
+	if appErr != nil {
+		s.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	var post *model.Post
+	post, appErr = s.api.GetPost(postID)
+	if appErr != nil {
+		s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
+	if appErr != nil {
+		s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	postList, appErr := s.api.GetPostThread(postID)
+	if appErr != nil {
+		s.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
+		s.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	threadPosts := make([]*model.Post, 0)
+	for _, v := range postList.Posts {
+		threadPosts = append(threadPosts, v)
+	}
+	sort.Slice(threadPosts, func(i, j int) bool {
+		return threadPosts[i].CreateAt > threadPosts[j].CreateAt
+	})
+
+	rootPost := threadPosts[len(threadPosts)-1]
+	lastPost := threadPosts[0]
+
+	if len(postList.Posts) > 1 && lastPost.Id != post.Id {
+		var channel *model.Channel
+		channel, appErr = s.api.GetChannel(post.ChannelId)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
+			return
+		}
+
+		var team *model.Team
+		team, appErr = s.api.GetTeam(channel.TeamId)
+		if appErr != nil {
+			s.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
+			s.deleteMessage(c, seqset, messageID)
+			return
+		}
+
+		postPl := "/" + team.Name + "/pl/" + post.Id
+
+		if len(post.Message) > ellipsisLen {
+			messageText = fmt.Sprintf("> [%s](%s)...\n\n%s", post.Message[:ellipsisLen], postPl, messageText)
+		} else {
+			messageText = fmt.Sprintf("> [%s](%s)\n\n%s", post.Message, postPl, messageText)
+		}
+	}
+
+	newPost := &model.Post{
+		UserId:    user.Id,
+		ChannelId: post.ChannelId,
+		Message:   messageText,
+		ParentId:  rootPost.Id,
+		RootId:    rootPost.Id,
+	}
+
+	_, appErr = s.api.CreatePost(newPost)
+	if appErr != nil {
+		s.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
+		// Do not delete the inbound email in this failure case because everything about the inbound email has been valid so far.
+		return
+	}
+
+	s.deleteMessage(c, seqset, messageID)
 }
 
 func (s *Client) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID string) {
