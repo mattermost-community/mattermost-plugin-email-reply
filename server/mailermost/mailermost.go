@@ -155,10 +155,10 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 	if err != nil {
 		var rBatchErr *ReplyToBatchError
 		if xerrors.As(err, &rBatchErr) {
-			p.api.LogError(fmt.Sprintf("apparent attempted to reply to a batched email notification by user %q", user.Id))
+			p.api.LogError(fmt.Sprintf("apparent attempt to reply to a batched email notification by user %s", user.Id))
 			appErr = p.api.SendMail(user.Email, msg.Envelope.Subject+" - REPLY NOT POSTED", rBatchErr.Error()+"<br><br><br>> "+messageText)
 			if appErr != nil {
-				p.api.LogError(fmt.Sprintf("apparent attempted to reply to a batched email notification by user %q", user.Id))
+				p.api.LogError(fmt.Sprintf("failure sending email to user %s", user.Id))
 				return // ...before the email is deleted.
 			}
 		} else {
