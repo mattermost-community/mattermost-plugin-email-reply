@@ -30,6 +30,7 @@ const (
 	maxPostIDsPerNotificationEmail        = 2
 )
 
+// Poller holds the server configuration values required to poll the IMAP mailbox.
 type Poller struct {
 	api             plugin.API
 	server          string
@@ -39,6 +40,7 @@ type Poller struct {
 	pollingInterval int
 }
 
+// NewPoller creates a new Poller instance.
 func NewPoller(api plugin.API, server, security, password, pollingInterval string) (*Poller, error) {
 	p := &Poller{
 		api:      api,
@@ -65,11 +67,11 @@ func (p *Poller) Poll() {
 	}
 }
 
-type ReplyToBatchError struct {
+type replyToBatchError struct {
 	Message string
 }
 
-func (r *ReplyToBatchError) Error() string {
+func (r *replyToBatchError) Error() string {
 	return r.Message
 }
 
@@ -153,7 +155,7 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 
 	postID, err := p.postIDFromEmailBody(string(body))
 	if err != nil {
-		var rBatchErr *ReplyToBatchError
+		var rBatchErr *replyToBatchError
 		if xerrors.As(err, &rBatchErr) {
 			p.api.LogError(fmt.Sprintf("apparent attempt to reply to a batched email notification by user %s", user.Id))
 			appErr = p.api.SendMail(user.Email, msg.Envelope.Subject+" - REPLY NOT POSTED", rBatchErr.Error()+"<br><br><br>> "+messageText)
@@ -263,7 +265,7 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 	matches := postIDRe.FindAllString(emailBody, maxEmailsPerInterval+1)
 
 	if len(matches) > maxPostIDsPerNotificationEmail {
-		return "", &ReplyToBatchError{Message: "It appears as if you attempted to reply to a batched notification email, which is not supported. Your reply was not posted to Mattermost."}
+		return "", &replyToBatchError{Message: "It appears as if you attempted to reply to a batched notification email, which is not supported. Your reply was not posted to Mattermost."}
 	}
 
 	match := matches[0]
