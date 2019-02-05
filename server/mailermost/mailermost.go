@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/xerrors"
+
 	"github.com/mattermost/mattermost-server/model"
 
 	imap "github.com/emersion/go-imap"
@@ -19,12 +21,13 @@ import (
 )
 
 const (
-	emailStartEnd        string = "\r\n\r\n"
-	postIDUrlRe          string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
-	emailLineEndingRe    string = `=\r\n`
-	mailboxName          string = "INBOX"
-	ellipsisLen          int    = 50
-	maxEmailsPerInterval        = 1000
+	emailStartEnd                  string = "\r\n\r\n"
+	postIDUrlRe                    string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
+	emailLineEndingRe              string = `=\r\n`
+	mailboxName                    string = "INBOX"
+	ellipsisLen                    int    = 50
+	maxEmailsPerInterval                  = 1000
+	maxPostIDsPerNotificationEmail        = 2
 )
 
 type Poller struct {
@@ -60,6 +63,14 @@ func (p *Poller) Poll() {
 	for range ticker.C {
 		p.checkMailbox()
 	}
+}
+
+type ReplyToBatchError struct {
+	Message string
+}
+
+func (r *ReplyToBatchError) Error() string {
+	return r.Message
 }
 
 func (p *Poller) checkMailbox() {
@@ -123,13 +134,6 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 
 	fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
 
-	postID := p.postIDFromEmailBody(string(body))
-	if !model.IsValidId(postID) {
-		p.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
-		p.deleteMessage(c, seqset, messageID)
-		return
-	}
-
 	messageText := p.extractMessage(string(body))
 	if len(messageText) == 0 {
 		p.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
@@ -143,6 +147,23 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 	user, appErr = p.api.GetUserByEmail(fromAddress)
 	if appErr != nil {
 		p.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
+		p.deleteMessage(c, seqset, messageID)
+		return
+	}
+
+	postID, err := p.postIDFromEmailBody(string(body))
+	if err != nil {
+		var rBatchErr *ReplyToBatchError
+		if xerrors.As(err, &rBatchErr) {
+			p.api.LogError(fmt.Sprintf("apparent attempted to reply to a batched email notification by user %q", user.Id))
+			appErr = p.api.SendMail(user.Email, msg.Envelope.Subject+" - REPLY NOT POSTED", rBatchErr.Error()+"<br><br><br>> "+messageText)
+			if appErr != nil {
+				p.api.LogError(fmt.Sprintf("apparent attempted to reply to a batched email notification by user %q", user.Id))
+				return // ...before the email is deleted.
+			}
+		} else {
+			p.api.LogError(fmt.Sprintf("post id parse error in email %s: %s", messageID, err.Error()))
+		}
 		p.deleteMessage(c, seqset, messageID)
 		return
 	}
@@ -233,18 +254,28 @@ func (p *Poller) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID 
 	}
 }
 
-func (p *Poller) postIDFromEmailBody(emailBody string) string {
+func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 	var postID string
 
 	postIDRe := regexp.MustCompile(postIDUrlRe)
 	lineEndingRe := regexp.MustCompile(emailLineEndingRe)
 	emailBody = lineEndingRe.ReplaceAllString(emailBody, "")
-	match := postIDRe.FindString(emailBody)
-	if len(match) >= 26 {
-		postID = match[len(match)-26:]
+	matches := postIDRe.FindAllString(emailBody, maxEmailsPerInterval+1)
+
+	p.api.LogDebug(fmt.Sprintf("matches: %+v", matches))
+	p.api.LogDebug(fmt.Sprintf("len(matches): %v", len(matches)))
+
+	if len(matches) > maxPostIDsPerNotificationEmail {
+		return "", &ReplyToBatchError{Message: "It appears as if you attempted to reply to a batched notification email, which is not supported. Your reply was not posted to Mattermost."}
 	}
 
-	return postID
+	match := matches[0]
+	postID = match[len(match)-26:]
+	if !model.IsValidId(postID) {
+		return "", fmt.Errorf("invalid postID: %s", postID)
+	}
+
+	return postID, nil
 }
 
 func (p *Poller) extractMessage(body string) string {
