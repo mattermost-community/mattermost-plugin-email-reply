@@ -76,17 +76,17 @@ func (r *ReplyToBatchError) Error() string {
 func (p *Poller) checkMailbox() {
 	c, err := client.DialTLS(p.server, nil)
 	if err != nil {
-		p.api.LogError(fmt.Sprintf("failure dialing TLS: %s", err.Error()))
+		p.api.LogError(fmt.Sprintf("failure connecting to IMAP server: %s", err.Error()))
 	}
 
 	if err := c.Login(p.email, p.password); err != nil {
-		p.api.LogError(fmt.Sprintf("failure loging into email for user %s: %s", p.email, err.Error()))
+		p.api.LogError(fmt.Sprintf("failure loging into email for user %q: %s", p.email, err.Error()))
 	}
 	defer c.Logout()
 
 	mbox, err := c.Select(mailboxName, false)
 	if err != nil {
-		p.api.LogError(fmt.Sprintf("failed to get %s: %s", mailboxName, err.Error()))
+		p.api.LogError(fmt.Sprintf("failed to get mailbox %q: %s", mailboxName, err.Error()))
 	}
 
 	from := uint32(1)
@@ -250,7 +250,7 @@ func (p *Poller) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID 
 	flags := []interface{}{imap.DeletedFlag}
 	err := c.Store(seqset, item, flags, nil)
 	if err != nil {
-		p.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
+		p.api.LogError(fmt.Sprintf("failed to set deleted flag on email %q: %s", messageID, err.Error()))
 	}
 }
 
@@ -262,9 +262,6 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 	emailBody = lineEndingRe.ReplaceAllString(emailBody, "")
 	matches := postIDRe.FindAllString(emailBody, maxEmailsPerInterval+1)
 
-	p.api.LogDebug(fmt.Sprintf("matches: %+v", matches))
-	p.api.LogDebug(fmt.Sprintf("len(matches): %v", len(matches)))
-
 	if len(matches) > maxPostIDsPerNotificationEmail {
 		return "", &ReplyToBatchError{Message: "It appears as if you attempted to reply to a batched notification email, which is not supported. Your reply was not posted to Mattermost."}
 	}
@@ -272,7 +269,7 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 	match := matches[0]
 	postID = match[len(match)-26:]
 	if !model.IsValidId(postID) {
-		return "", fmt.Errorf("invalid postID: %s", postID)
+		return "", fmt.Errorf("invalid postID %q", postID)
 	}
 
 	return postID, nil
