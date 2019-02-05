@@ -36,13 +36,12 @@ func (p *Plugin) OnActivate() error {
 	configuration := p.getConfiguration()
 
 	var err error
-	p.Client, err = mailermost.NewClient(p.API, configuration.Server, configuration.Security, configuration.Password, configuration.PollingInterval)
-
+	p.Poller, err = mailermost.NewPoller(p.API, configuration.Server, configuration.Security, configuration.Password, configuration.PollingInterval)
 	if err != nil {
 		return err
 	}
 
-	go p.Client.StartPolling()
+	go p.Poller.Poll()
 
 	return nil
 }

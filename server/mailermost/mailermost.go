@@ -27,7 +27,7 @@ const (
 	maxEmailsPerInterval        = 1000
 )
 
-type Client struct {
+type Poller struct {
 	api             plugin.API
 	server          string
 	security        string
@@ -36,8 +36,8 @@ type Client struct {
 	pollingInterval int
 }
 
-func NewClient(api plugin.API, server, security, password, pollingInterval string) (*Client, error) {
-	s := &Client{
+func NewPoller(api plugin.API, server, security, password, pollingInterval string) (*Poller, error) {
+	p := &Poller{
 		api:      api,
 		server:   server,
 		security: security,
@@ -46,28 +46,36 @@ func NewClient(api plugin.API, server, security, password, pollingInterval strin
 	}
 
 	var err error
-	s.pollingInterval, err = strconv.Atoi(pollingInterval)
+	p.pollingInterval, err = strconv.Atoi(pollingInterval)
 	if err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return p, nil
 }
 
-func (s *Client) checkMailbox() {
-	c, err := client.DialTLS(s.server, nil)
+// Poll starts checking the configured email mailbox on the configured interval.
+func (p *Poller) Poll() {
+	ticker := time.NewTicker(time.Duration(p.pollingInterval) * time.Second)
+	for range ticker.C {
+		p.checkMailbox()
+	}
+}
+
+func (p *Poller) checkMailbox() {
+	c, err := client.DialTLS(p.server, nil)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failure dialing TLS: %s", err.Error()))
+		p.api.LogError(fmt.Sprintf("failure dialing TLS: %s", err.Error()))
 	}
 
-	if err := c.Login(s.email, s.password); err != nil {
-		s.api.LogError(fmt.Sprintf("failure loging into email for user %s: %s", s.email, err.Error()))
+	if err := c.Login(p.email, p.password); err != nil {
+		p.api.LogError(fmt.Sprintf("failure loging into email for user %s: %s", p.email, err.Error()))
 	}
 	defer c.Logout()
 
 	mbox, err := c.Select(mailboxName, false)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failed to get %s: %s", mailboxName, err.Error()))
+		p.api.LogError(fmt.Sprintf("failed to get %s: %s", mailboxName, err.Error()))
 	}
 
 	from := uint32(1)
@@ -84,80 +92,80 @@ func (s *Client) checkMailbox() {
 	}()
 
 	for msg := range messages {
-		s.processEmail(msg, section, seqset, c)
+		p.processEmail(msg, section, seqset, c)
 	}
 
 	if err := <-done; err != nil {
-		s.api.LogError(err.Error())
+		p.api.LogError(err.Error())
 	}
 }
 
-func (s *Client) processEmail(msg *imap.Message, section *imap.BodySectionName, seqset *imap.SeqSet, c *client.Client) {
+func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, seqset *imap.SeqSet, c *client.Client) {
 	messageID := msg.Envelope.MessageId
 
 	r := msg.GetBody(section)
 	if r == nil {
-		s.api.LogError(fmt.Sprintf("failed to get message body of email %s", messageID))
+		p.api.LogError(fmt.Sprintf("failed to get message body of email %s", messageID))
 		return
 	}
 
 	m, err := mail.ReadMessage(r)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failure reading email %s: %s", messageID, err.Error()))
+		p.api.LogError(fmt.Sprintf("failure reading email %s: %s", messageID, err.Error()))
 		return
 	}
 
 	body, err := ioutil.ReadAll(m.Body)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failed to read message body of email %s: %s", messageID, err.Error()))
+		p.api.LogError(fmt.Sprintf("failed to read message body of email %s: %s", messageID, err.Error()))
 		return
 	}
 
 	fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
 
-	postID := s.postIDFromEmailBody(string(body))
+	postID := p.postIDFromEmailBody(string(body))
 	if !model.IsValidId(postID) {
-		s.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogInfo(fmt.Sprintf("email %s contains invalid post id %s", messageID, postID))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
-	messageText := s.extractMessage(string(body))
+	messageText := p.extractMessage(string(body))
 	if len(messageText) == 0 {
-		s.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
 	var appErr *model.AppError
 
 	var user *model.User
-	user, appErr = s.api.GetUserByEmail(fromAddress)
+	user, appErr = p.api.GetUserByEmail(fromAddress)
 	if appErr != nil {
-		s.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogError(fmt.Sprintf("failed to get user with email address %s: %s", fromAddress, appErr.Error()))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
 	var post *model.Post
-	post, appErr = s.api.GetPost(postID)
+	post, appErr = p.api.GetPost(postID)
 	if appErr != nil {
-		s.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogError(fmt.Sprintf("failed to get post with id %s: %s", postID, appErr.Error()))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
-	_, appErr = s.api.GetChannelMember(post.ChannelId, user.Id)
+	_, appErr = p.api.GetChannelMember(post.ChannelId, user.Id)
 	if appErr != nil {
-		s.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogError(fmt.Sprintf("failed to get channel member %s in channel %s: %s", user.Id, post.ChannelId, appErr.Error()))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
-	postList, appErr := s.api.GetPostThread(postID)
+	postList, appErr := p.api.GetPostThread(postID)
 	if appErr != nil {
-		s.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
-		s.deleteMessage(c, seqset, messageID)
+		p.api.LogError(fmt.Sprintf("failed to get post thread for post id %s: %s", postID, appErr.Error()))
+		p.deleteMessage(c, seqset, messageID)
 		return
 	}
 
@@ -174,18 +182,18 @@ func (s *Client) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 
 	if len(postList.Posts) > 1 && lastPost.Id != post.Id {
 		var channel *model.Channel
-		channel, appErr = s.api.GetChannel(post.ChannelId)
+		channel, appErr = p.api.GetChannel(post.ChannelId)
 		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
+			p.api.LogError(fmt.Sprintf("failed to get channel with id %s: %s", post.ChannelId, appErr.Error()))
+			p.deleteMessage(c, seqset, messageID)
 			return
 		}
 
 		var team *model.Team
-		team, appErr = s.api.GetTeam(channel.TeamId)
+		team, appErr = p.api.GetTeam(channel.TeamId)
 		if appErr != nil {
-			s.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
-			s.deleteMessage(c, seqset, messageID)
+			p.api.LogError(fmt.Sprintf("failed to get team with id %s: %s", channel.TeamId, appErr.Error()))
+			p.deleteMessage(c, seqset, messageID)
 			return
 		}
 
@@ -206,34 +214,26 @@ func (s *Client) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 		RootId:    rootPost.Id,
 	}
 
-	_, appErr = s.api.CreatePost(newPost)
+	_, appErr = p.api.CreatePost(newPost)
 	if appErr != nil {
-		s.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
+		p.api.LogError(fmt.Sprintf("failed to create post %+v: %s", newPost, appErr.Error()))
 		// Do not delete the inbound email in this failure case because everything about the inbound email has been valid so far.
 		return
 	}
 
-	s.deleteMessage(c, seqset, messageID)
+	p.deleteMessage(c, seqset, messageID)
 }
 
-func (s *Client) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID string) {
+func (p *Poller) deleteMessage(c *client.Client, seqset *imap.SeqSet, messageID string) {
 	item := imap.FormatFlagsOp(imap.AddFlags, true)
 	flags := []interface{}{imap.DeletedFlag}
 	err := c.Store(seqset, item, flags, nil)
 	if err != nil {
-		s.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
+		p.api.LogError(fmt.Sprintf("failed to set deleted flag on email %s: %s", messageID, err.Error()))
 	}
 }
 
-// StartPolling starts checking the configured email mailbox on the configured interval.
-func (s *Client) StartPolling() {
-	ticker := time.NewTicker(time.Duration(s.pollingInterval) * time.Second)
-	for range ticker.C {
-		s.checkMailbox()
-	}
-}
-
-func (s *Client) postIDFromEmailBody(emailBody string) string {
+func (p *Poller) postIDFromEmailBody(emailBody string) string {
 	var postID string
 
 	postIDRe := regexp.MustCompile(postIDUrlRe)
@@ -247,7 +247,7 @@ func (s *Client) postIDFromEmailBody(emailBody string) string {
 	return postID
 }
 
-func (s *Client) extractMessage(body string) string {
+func (p *Poller) extractMessage(body string) string {
 	bodyWithoutHeaders := body
 
 	firstIdx := strings.Index(body, emailStartEnd)

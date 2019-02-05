@@ -11,7 +11,7 @@ import (
 type Plugin struct {
 	plugin.MattermostPlugin
 
-	Client *mailermost.Client
+	Poller *mailermost.Poller
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
