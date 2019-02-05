@@ -1,5 +1,7 @@
 # Mailermost
 
+[![GoDoc](https://godoc.org/github.com/DSchalla/mailermost-plugin/server/mailermost?status.svg)](https://godoc.org/github.com/DSchalla/mailermost-plugin/server/mailermost) 
+
 Reply directly to an email notification...
 
 ![example of replying to an email notification](example.png "example of replying to an email notification")
