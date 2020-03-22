@@ -1,14 +1,15 @@
 # Mailermost
 
-[![GoDoc](https://godoc.org/github.com/DSchalla/mailermost-plugin/server/mailermost?status.svg)](https://godoc.org/github.com/DSchalla/mailermost-plugin/server/mailermost) 
+[![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-email-reply/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-email-reply)
+[![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-email-reply/master.svg)](https://codecov.io/gh/mattermost/mattermost-plugin-email-reply)
 
 Reply directly to an email notification...
 
-![example of replying to an email notification](example.png "example of replying to an email notification")
+![example of replying to an email notification](images/example.png "example of replying to an email notification")
 
 ...and the post appears in Mattermost.
 
-![example of resulting Mattermost post](example2.png "example of resulting Mattermost post")
+![example of resulting Mattermost post](images/example2.png "example of resulting Mattermost post")
 
 ## Requirements
 

@@ -3,11 +3,12 @@ package main
 import (
 	"sync"
 
-	"github.com/DSchalla/mailermost-plugin/server/mailermost"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-plugin-email-reply/server/mailermost"
 )
 
+// Plugin is the object to run the plugin
 type Plugin struct {
 	plugin.MattermostPlugin
 

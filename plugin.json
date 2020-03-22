@@ -3,13 +3,13 @@
   "name": "Mailermost",
   "description": "Replying to notification emails sends the reply as a post in Mattermost.",
   "version": "0.0.7",
+  "min_server_version": "5.10.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
       "windows-amd64": "server/dist/plugin-windows-amd64.exe"
-    },
-    "executable": ""
+    }
   },
   "settings_schema": {
     "header": "Configure the IMAP connection information for the email address that response emails will be sent to. The email address used is the address set in `EmailSettings.ReplyToAddress` in the Mattermost config.",
@@ -49,7 +49,7 @@
       {
         "key": "polling_interval",
         "display_name": "Polling Interval (seconds)",
-        "type": "text"
+        "type": "number"
       }
     ]
   }

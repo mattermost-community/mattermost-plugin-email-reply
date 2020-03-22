@@ -1,6 +1,8 @@
 package main
 
 import (
+	"reflect"
+
 	"github.com/pkg/errors"
 )
 
@@ -12,12 +14,22 @@ import (
 // configuration can change at any time, access to the configuration must be synchronized. The
 // strategy used in this plugin is to guard a pointer to the configuration, and clone the entire
 // struct whenever it changes. You may replace this with whatever strategy you choose.
+//
+// If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
+// copy appropriate for your types.
 type configuration struct {
 	Server          string
 	Security        string
 	Email           string
 	Password        string
-	PollingInterval string `json:"polling_interval"`
+	PollingInterval int `json:"polling_interval"`
+}
+
+// Clone shallow copies the configuration. Your implementation may require a deep copy if
+// your configuration has reference types.
+func (c *configuration) Clone() *configuration {
+	var clone = *c
+	return &clone
 }
 
 // getConfiguration retrieves the active configuration under lock, making it safe to use
@@ -48,6 +60,13 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 	defer p.configurationLock.Unlock()
 
 	if configuration != nil && p.configuration == configuration {
+		// Ignore assignment if the configuration struct is empty. Go will optimize the
+		// allocation for same to point at the same memory address, breaking the check
+		// above.
+		if reflect.ValueOf(*configuration).NumField() == 0 {
+			return
+		}
+
 		panic("setConfiguration called with the existing configuration")
 	}
 
@@ -55,9 +74,6 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
-//
-// This demo implementation ensures the configured demo user and channel are created for use
-// by the plugin.
 func (p *Plugin) OnConfigurationChange() error {
 	var configuration = new(configuration)
 
