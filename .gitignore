@@ -1,2 +1,7 @@
 dist
-.idea
+
+# Mac
+.DS_Store
+
+# VSCode
+.vscode

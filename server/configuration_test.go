@@ -16,13 +16,13 @@ func TestConfiguration(t *testing.T) {
 		plugin := &Plugin{}
 
 		configuration1 := &configuration{
-			// disabled: false
+			Email: "test@example.org",
 		}
 		plugin.setConfiguration(configuration1)
 		assert.Equal(t, configuration1, plugin.getConfiguration())
 
 		configuration2 := &configuration{
-			// disabled: true
+			Email: "test-2@example.org",
 		}
 		plugin.setConfiguration(configuration2)
 		assert.Equal(t, configuration2, plugin.getConfiguration())
@@ -34,7 +34,9 @@ func TestConfiguration(t *testing.T) {
 	t.Run("setting same configuration", func(t *testing.T) {
 		plugin := &Plugin{}
 
-		configuration1 := &configuration{}
+		configuration1 := &configuration{
+			Email: "test@example.org",
+		}
 		plugin.setConfiguration(configuration1)
 		assert.Panics(t, func() {
 			plugin.setConfiguration(configuration1)
@@ -45,7 +47,7 @@ func TestConfiguration(t *testing.T) {
 		plugin := &Plugin{}
 
 		configuration1 := &configuration{
-			// disabled: true
+			Email: "test@example.org",
 		}
 		plugin.setConfiguration(configuration1)
 		assert.NotPanics(t, func() {

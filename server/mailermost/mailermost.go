@@ -7,17 +7,14 @@ import (
 	"net/mail"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
-	"golang.org/x/xerrors"
-
-	"github.com/mattermost/mattermost-server/model"
-
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -41,19 +38,18 @@ type Poller struct {
 }
 
 // NewPoller creates a new Poller instance.
-func NewPoller(api plugin.API, server, security, password, pollingInterval string) (*Poller, error) {
-	p := &Poller{
-		api:      api,
-		server:   server,
-		security: security,
-		email:    *api.GetConfig().EmailSettings.ReplyToAddress,
-		password: password,
+func NewPoller(api plugin.API, server, security, password string, pollingInterval int) (*Poller, error) {
+	if pollingInterval <= 0 {
+		return nil, errors.New("pollingInterval must be greater then zero")
 	}
 
-	var err error
-	p.pollingInterval, err = strconv.Atoi(pollingInterval)
-	if err != nil {
-		return nil, err
+	p := &Poller{
+		api:             api,
+		server:          server,
+		security:        security,
+		email:           *api.GetConfig().EmailSettings.ReplyToAddress,
+		password:        password,
+		pollingInterval: pollingInterval,
 	}
 
 	return p, nil
@@ -63,7 +59,10 @@ func NewPoller(api plugin.API, server, security, password, pollingInterval strin
 func (p *Poller) Poll() {
 	ticker := time.NewTicker(time.Duration(p.pollingInterval) * time.Second)
 	for range ticker.C {
-		p.checkMailbox()
+		err := p.checkMailbox()
+		if err != nil {
+			p.api.LogError("Failed to poll mailbox", "error", err.Error())
+		}
 	}
 }
 
@@ -75,20 +74,25 @@ func (r *replyToBatchError) Error() string {
 	return r.Message
 }
 
-func (p *Poller) checkMailbox() {
+func (p *Poller) checkMailbox() error {
 	c, err := client.DialTLS(p.server, nil)
 	if err != nil {
-		p.api.LogError(fmt.Sprintf("failure connecting to IMAP server: %s", err.Error()))
+		return errors.Wrap(err, "failure connecting to IMAP server")
 	}
 
-	if err := c.Login(p.email, p.password); err != nil {
-		p.api.LogError(fmt.Sprintf("failure loging into email for user %q: %s", p.email, err.Error()))
+	if err = c.Login(p.email, p.password); err != nil {
+		return errors.Wrapf(err, "failure loging into email for user %q", p.email)
 	}
-	defer c.Logout()
+	defer func() {
+		err = c.Logout()
+		if err != nil {
+			p.api.LogError("Failed to log out of mailbox", "error", err.Error())
+		}
+	}()
 
 	mbox, err := c.Select(mailboxName, false)
 	if err != nil {
-		p.api.LogError(fmt.Sprintf("failed to get mailbox %q: %s", mailboxName, err.Error()))
+		return errors.Wrapf(err, "failed to get mailbox %q", mailboxName)
 	}
 
 	from := uint32(1)
@@ -109,8 +113,10 @@ func (p *Poller) checkMailbox() {
 	}
 
 	if err := <-done; err != nil {
-		p.api.LogError(err.Error())
+		return err
 	}
+
+	return nil
 }
 
 func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, seqset *imap.SeqSet, c *client.Client) {
@@ -156,7 +162,7 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 	postID, err := p.postIDFromEmailBody(string(body))
 	if err != nil {
 		var rBatchErr *replyToBatchError
-		if xerrors.As(err, &rBatchErr) {
+		if errors.As(err, &rBatchErr) {
 			p.api.LogError(fmt.Sprintf("apparent attempt to reply to a batched email notification by user %s", user.Id))
 			appErr = p.api.SendMail(user.Email, msg.Envelope.Subject+" - REPLY NOT POSTED", rBatchErr.Error()+"<br><br><br>> "+messageText)
 			if appErr != nil {

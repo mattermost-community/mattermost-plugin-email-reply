@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/DSchalla/mailermost-plugin/server/mailermost"
-
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-email-reply/server/mailermost"
 )
 
 const minimumServerVersion = "5.4.0"
@@ -35,18 +35,13 @@ func (p *Plugin) OnActivate() error {
 
 	configuration := p.getConfiguration()
 
-	var err error
-	p.Poller, err = mailermost.NewPoller(p.API, configuration.Server, configuration.Security, configuration.Password, configuration.PollingInterval)
+	poller, err := mailermost.NewPoller(p.API, configuration.Server, configuration.Security, configuration.Password, configuration.PollingInterval)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create poller")
 	}
+	p.Poller = poller
 
 	go p.Poller.Poll()
-
-	return nil
-}
-
-func (p *Plugin) OnDeactivate() error {
 
 	return nil
 }
