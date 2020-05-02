@@ -274,6 +274,10 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 		return "", &replyToBatchError{Message: "It appears as if you attempted to reply to a batched notification email, which is not supported. Your reply was not posted to Mattermost."}
 	}
 
+	if len(matches) == 0 {
+		return "", errors.Errorf("failed to find postID in email body: %v", emailBody)
+	}
+
 	match := matches[0]
 	postID = match[len(match)-26:]
 	if !model.IsValidId(postID) {
