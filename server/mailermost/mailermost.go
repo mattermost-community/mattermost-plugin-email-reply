@@ -75,16 +75,26 @@ func (r *replyToBatchError) Error() string {
 }
 
 func (p *Poller) checkMailbox() error {
-	c, err := client.DialTLS(p.server, nil)
-	if err != nil {
-		return errors.Wrap(err, "failure connecting to IMAP server")
+	var (
+		c    *client.Client
+		cerr error
+	)
+
+	if p.security == "none" {
+		c, cerr = client.Dial(p.server)
+	} else {
+		c, cerr = client.DialTLS(p.server, nil)
 	}
 
-	if err = c.Login(p.email, p.password); err != nil {
+	if cerr != nil {
+		return errors.Wrap(cerr, "failure connecting to IMAP server")
+	}
+
+	if err := c.Login(p.email, p.password); err != nil {
 		return errors.Wrapf(err, "failure loging into email for user %q", p.email)
 	}
 	defer func() {
-		err = c.Logout()
+		err := c.Logout()
 		if err != nil {
 			p.api.LogError("Failed to log out of mailbox", "error", err.Error())
 		}
