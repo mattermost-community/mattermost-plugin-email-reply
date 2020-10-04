@@ -2,7 +2,7 @@
   "id": "com.mattermost.mailermost-plugin",
   "name": "Mailermost",
   "description": "Replying to notification emails sends the reply as a post in Mattermost.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "min_server_version": "5.10.0",
   "server": {
     "executables": {

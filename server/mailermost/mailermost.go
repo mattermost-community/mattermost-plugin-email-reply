@@ -3,7 +3,6 @@ package mailermost
 import (
 	"fmt"
 	"io/ioutil"
-	"mime/quotedprintable"
 	"net/mail"
 	"regexp"
 	"sort"
@@ -12,6 +11,7 @@ import (
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+	"github.com/mattermost/mattermost-plugin-email-reply/server/mailermost/extractors"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
@@ -142,7 +142,7 @@ func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, 
 
 	fromAddress := msg.Envelope.From[0].MailboxName + "@" + msg.Envelope.From[0].HostName
 
-	messageText := p.extractMessage(string(body))
+	messageText := p.extractMessage(string(body), messageID)
 	if len(messageText) == 0 {
 		p.api.LogError(fmt.Sprintf("email %s has no message text", messageID))
 		p.deleteMessage(c, seqset, messageID)
@@ -287,23 +287,17 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 	return postID, nil
 }
 
-func (p *Poller) extractMessage(body string) string {
-	bodyWithoutHeaders := body
+func (p *Poller) extractMessage(body string, messageID string) string {
 
-	firstIdx := strings.Index(body, emailStartEnd)
-	if firstIdx != -1 {
-		bodyWithoutHeaders = body[firstIdx+4:]
+	var extractor extractors.IExtractor
+
+	clientType := messageID[strings.Index(messageID, "@")+1 : len(messageID)-1]
+
+	if clientType == "mozgaia" {
+		extractor = extractors.MozGaiaExtractor{}
+	} else {
+		extractor = extractors.DefaultExtractor{}
 	}
 
-	lastIdx := strings.Index(bodyWithoutHeaders, emailStartEnd)
-	cleanBody := bodyWithoutHeaders
-	if lastIdx != -1 {
-		cleanBody = bodyWithoutHeaders[:lastIdx]
-	}
-
-	reader := strings.NewReader(cleanBody)
-	quotedprintableReader := quotedprintable.NewReader(reader)
-	message, _ := ioutil.ReadAll(quotedprintableReader)
-
-	return strings.TrimSpace(string(message))
+	return extractor.ExtractMessage(body)
 }
