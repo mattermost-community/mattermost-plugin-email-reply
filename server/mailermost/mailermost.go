@@ -75,7 +75,7 @@ func (r *replyToBatchError) Error() string {
 }
 
 func (p *Poller) checkMailbox() error {
-	c, err := client.DialTLS(p.server, nil)
+	c, err := newIMAPClient(p.server, p.security)
 	if err != nil {
 		return errors.Wrap(err, "failure connecting to IMAP server")
 	}
@@ -117,6 +117,13 @@ func (p *Poller) checkMailbox() error {
 	}
 
 	return nil
+}
+
+func newIMAPClient(addr, security string) (*client.Client, error) {
+	if security == "none" {
+		return client.Dial(addr)
+	}
+	return client.DialTLS(addr, nil)
 }
 
 func (p *Poller) processEmail(msg *imap.Message, section *imap.BodySectionName, seqset *imap.SeqSet, c *client.Client) {
