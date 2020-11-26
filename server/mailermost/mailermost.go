@@ -11,14 +11,14 @@ import (
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
-	"github.com/mattermost/mattermost-plugin-email-reply/server/mailermost/extractors"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-email-reply/server/mailermost/extractors"
 )
 
 const (
-	emailStartEnd                  string = "\r\n\r\n"
 	postIDUrlRe                    string = `https?:\/\/.*\/pl\/[a-z0-9]{26}`
 	emailLineEndingRe              string = `=\r\n`
 	mailboxName                    string = "INBOX"
@@ -295,7 +295,6 @@ func (p *Poller) postIDFromEmailBody(emailBody string) (string, error) {
 }
 
 func (p *Poller) extractMessage(body string, messageID string) string {
-
 	var extractor extractors.IExtractor
 
 	clientType := messageID[strings.Index(messageID, "@")+1 : len(messageID)-1]

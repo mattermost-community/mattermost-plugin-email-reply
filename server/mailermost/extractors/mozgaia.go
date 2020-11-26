@@ -13,7 +13,6 @@ type MozGaiaExtractor struct {
 // ExtractMessage is implementation of IExtractor interface with method for extracting emails
 // from KaiOS mobile email client
 func (e MozGaiaExtractor) ExtractMessage(body string) string {
-
 	bodyWithoutHeaders := body[60:]
 
 	lastIdx := strings.Index(bodyWithoutHeaders, emailStartEnd)
