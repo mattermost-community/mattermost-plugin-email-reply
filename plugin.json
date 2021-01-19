@@ -17,13 +17,13 @@
     "settings": [
       {
         "key": "server",
-        "display_name": "IMAP Server and Port",
+        "display_name": "IMAP Server and Port:",
         "type": "text",
         "placeholder": "imap.example.com:443"
       },
       {
         "key": "security",
-        "display_name": "IMAP Security",
+        "display_name": "IMAP Security:",
         "type": "dropdown",
         "default": "ssl",
         "options": [
@@ -43,12 +43,12 @@
       },
       {
         "key": "password",
-        "display_name": "IMAP Password",
+        "display_name": "IMAP Password:",
         "type": "text"
       },
       {
         "key": "polling_interval",
-        "display_name": "Polling Interval (seconds)",
+        "display_name": "Polling Interval (seconds):",
         "type": "number"
       }
     ]
