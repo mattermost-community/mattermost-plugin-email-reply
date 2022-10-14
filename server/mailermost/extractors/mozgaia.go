@@ -25,5 +25,10 @@ func (e MozGaiaExtractor) ExtractMessage(body string) string {
 	quotedprintableReader := quotedprintable.NewReader(reader)
 	message, _ := ioutil.ReadAll(quotedprintableReader)
 	smessage := string(message)
-	return smessage[:strings.Index(smessage, "<br/><br/>")]
+	index := strings.Index(smessage, "<br/><br/>")
+	if index < 0 {
+		return smessage
+	}
+
+	return smessage[:index]
 }
